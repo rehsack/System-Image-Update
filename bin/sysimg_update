@@ -1,0 +1,5 @@
+#!perl
+
+use System::Image::Update;
+
+System::Image::Update->new_with_cmd;
