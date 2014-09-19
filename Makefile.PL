@@ -6,12 +6,18 @@ use 5.014;
 use ExtUtils::MakeMaker;
 
 my %RUN_DEPS = (
-    'perl'                 => 5.014,
-    'Moo'                  => 0,
-    'MooX::Cmd'            => 0,
-    'MooX::Options'        => 0,
-    'MooX::ConfigFromFile' => 0,
-    'Net::Async::HTTP'     => 0,
+    'perl'                       => 5.014,
+    'Class::Load'                => 0,
+    'Crypt::RIPEMD160'           => 0,
+    'DateTime'                   => 0,
+    'DateTime::Format::Strptime' => 0,
+    'Digest::SHA'                => 0,
+    'Moo'                        => 0,
+    'MooX::Log::Any'             => 0,
+    'MooX::Options'              => 0,
+    'MooX::ConfigFromFile'       => 0,
+    'Net::Async::HTTP'           => 0,
+    'URI'                        => 0,
 );
 my %CONFIGURE_DEPS = (
     'ExtUtils::MakeMaker' => 0,

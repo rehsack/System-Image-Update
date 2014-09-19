@@ -2,4 +2,4 @@
 
 use System::Image::Update;
 
-System::Image::Update->new_with_cmd;
+System::Image::Update->new_with_options->run;
