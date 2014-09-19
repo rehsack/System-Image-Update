@@ -63,12 +63,15 @@ sub _build_download_image
     $save_fn;
 }
 
-has download_sums => (is => "lazy", clearer => 1);
+has download_sums => (
+    is      => "lazy",
+    clearer => 1
+);
 
 sub _build_download_sums
 {
-    my $self = shift;
-    my $save_fn = $self->recent_update->{ $self->download_file };
+    my $self      = shift;
+    my $save_fn   = $self->recent_update->{ $self->download_file };
     my @save_info = split ";", $save_fn;
     shift @save_info;
     my %sums = map { split "=", $_, 2 } @save_info;
@@ -145,7 +148,10 @@ sub abort_download
     $download_response_future->cancel;
     $download_response_future = undef;
     -e $fn and unlink($fn);
-    return $self->log->error("Cannot open $fn for appending: $errmsg");
+    $self->clear_recent_update;
+    $self->clear_download_image;
+    $self->clear_download_sums;
+    return $self->log->error($errmsg);
 }
 
 sub download_chunk
@@ -160,7 +166,7 @@ sub download_chunk
         return $self->abort_download( $fn, $! );
     }
 
-    syswrite( $fh, $data ) or return $self->abort_download( $fn, $! );
+    syswrite( $fh, $data ) or return $self->abort_download( $fn, "Cannot open $fn for appending: $!" );
     close($fh) or return $self->abort_download( $fn, $! );
 }
 
@@ -175,8 +181,65 @@ sub prove_download
 {
     my $self = shift;
     $self->has_recent_update or return;
-    my $save_fn = $self->download_image;
+    my $save_fn     = $self->download_image;
     my $save_chksum = $self->download_sums;
+    my $chksums_ok  = 0;
+
+    if ( defined( $save_chksum->{rmd160} ) )
+    {
+        my $fh;
+        open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
+
+        my $context = Crypt::RIPEMD160->new;
+        $context->reset();
+        $context->addfile($fh);
+        $string = $context->hexdigest();
+
+        $string eq $save_chksum->{rmd160} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        ++$chksums_ok;
+    }
+
+    if ( defined( $save_chksum->{sha1} ) )
+    {
+        $sha = Digest::SHA->new("sha1");
+        $sha->addfile($save_fn);
+        my $string = $sha->hexdigest;
+
+        $string eq $save_chksum->{sha1} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        ++$chksums_ok;
+    }
+
+    if ( defined( $save_chksum->{sha256} ) )
+    {
+        $sha = Digest::SHA->new("sha256");
+        $sha->addfile($save_fn);
+        my $string = $sha->hexdigest;
+
+        $string eq $save_chksum->{sha256} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        ++$chksums_ok;
+    }
+
+    if ( defined( $save_chksum->{sha384} ) )
+    {
+        $sha = Digest::SHA->new("sha384");
+        $sha->addfile($save_fn);
+        my $string = $sha->hexdigest;
+
+        $string eq $save_chksum->{sha384} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        ++$chksums_ok;
+    }
+
+    if ( defined( $save_chksum->{sha512} ) )
+    {
+        $sha = Digest::SHA->new("sha512");
+        $sha->addfile($save_fn);
+        my $string = $sha->hexdigest;
+
+        $string eq $save_chksum->{sha512} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        ++$chksums_ok;
+    }
+
+    $chksums_ok >= 2 or return $self->abort_download( $self->download_image, "Not enought checksums passed" );
 }
 
 1;
