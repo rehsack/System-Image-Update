@@ -8,10 +8,9 @@ use ExtUtils::MakeMaker;
 my %RUN_DEPS = (
     'perl'                       => 5.014,
     'Class::Load'                => 0,
-    'Crypt::RIPEMD160'           => 0,
     'DateTime'                   => 0,
     'DateTime::Format::Strptime' => 0,
-    'Digest::SHA'                => 0,
+    'Module::Runtime'            => 0,
     'Moo'                        => 0,
     'MooX::Log::Any'             => 0,
     'MooX::Options'              => 0,
@@ -58,6 +57,12 @@ WriteMakefile1(
             runtime => {
                 requires   => { %RUN_DEPS, },
                 recommends => {
+                    'Crypt::RIPEMD160'            => 0,
+                    'Digest::SHA'                 => 0,
+                    'Digest::SHA2'                => 0,
+                    'Digest::SHA3'                => 0,
+                    'Digest::MD5'                 => 0,
+                    'Digest::MD6'                 => 0,
                     'Log::Dispatch'               => 0,
                     'Log::Any::Adapter::Dispatch' => 0,
                 },
