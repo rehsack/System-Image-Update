@@ -7,6 +7,8 @@ use HTTP::Status qw(status_message);
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
+our $VERSION = "0.001";
+
 has http => ( is => "lazy" );
 
 sub _build_http { my $http = Net::Async::HTTP->new(); $_[0]->loop->add($http); $http }

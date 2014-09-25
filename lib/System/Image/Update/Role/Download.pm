@@ -10,6 +10,10 @@ use File::Spec qw();
 
 use Module::Runtime qw(require_module);
 
+use Scalar::Util qw(looks_like_number);
+
+our $VERSION = "0.001";
+
 has recent_update => (
     is        => "rw",
     trigger   => 1,
@@ -23,10 +27,10 @@ sub _trigger_recent_update
     exists $new_val->{estimated_dl_ts} or $self->determine_estimated_dl_ts($new_val);
     $self->wakeup_in( 5, "save_config" );
     my $now = DateTime->now->epoch;
-    $self->{estimated_dl_ts} > $now
-      and $self->wakeup_at( $self->{estimated_dl_ts}, "download" )
-      and $self->scan_before( $self->{estimated_dl_ts} - 60 );
-    $self->{estimated_dl_ts} <= $now and $self->wakeup_in( 1, "download" );
+    $new_val->{estimated_dl_ts} > $now
+      and $self->wakeup_at( $new_val->{estimated_dl_ts}, "download" )
+      and $self->scan_before( $new_val->{estimated_dl_ts} - 60 );
+    $new_val->{estimated_dl_ts} <= $now and $self->wakeup_in( 1, "download" );
 }
 
 has download_file => (
@@ -46,6 +50,19 @@ has max_download_wait => (
 has download_dir => ( is => "lazy" );
 
 sub _build_download_dir { File::Basename::dirname( $_[0]->update_manifest ); }
+
+has download_basename => (
+    is      => "lazy",
+    clearer => 1
+);
+
+sub _build_download_basename
+{
+    my $self = shift;
+    $self->has_recent_update or die "No downloadable image without a recent update";
+    my $save_fn = $self->recent_update->{ $self->download_file };
+    $save_fn = ( split ";", $save_fn )[0];
+}
 
 has download_image => (
     is      => "lazy",
@@ -85,11 +102,11 @@ sub determine_estimated_dl_ts
         pattern  => "%FT%T",
         on_error => sub { $self->log->error( $_[1] ); 1 }
     );
-    looks_like_numer( $new_val->{release_ts} ) or $new_val->{release_ts} = $strp->parse_datetime( $new_val->{apply} )->epoch;
+    looks_like_number( $new_val->{release_ts} ) or $new_val->{release_ts} = $strp->parse_datetime( $new_val->{apply} )->epoch;
     my $release_ts = $new_val->{release_ts};
     if ( $new_val->{apply} )
     {
-        looks_like_numer( $new_val->{apply} ) or $new_val->{apply} = $strp->parse_datetime( $new_val->{apply} )->epoch;
+        looks_like_number( $new_val->{apply} ) or $new_val->{apply} = $strp->parse_datetime( $new_val->{apply} )->epoch;
 
         my $apply_ts      = $new_val->{apply};
         my $delta_seconds = $apply_ts - $release_ts;
@@ -127,10 +144,12 @@ sub download
     $self->prove_download and return $self->finish_download;
 
     my $save_fn = $self->download_image;
+    # XXX add Content-Range as in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.16
+    #     and truncate file in that case ...
     -e $save_fn and unlink($save_fn);
 
     ($download_response_future) = $http->do_request(
-        uri       => URI->new( $self->update_uri . $self->recent_update->{ $self->download_file } ),
+        uri       => URI->new( $self->update_uri . $self->download_basename ),
         method    => "GET",
         user      => $self->http_user,
         pass      => $self->http_passwd,
@@ -144,11 +163,12 @@ sub abort_download
 {
     my ( $self, $fn, $errmsg ) = @_;
     $self->status("scan");
-    $download_response_future->cancel;
+    defined $download_response_future and $download_response_future->cancel;
     $download_response_future = undef;
-    -e $fn and unlink($fn);
+    # -e $fn and unlink($fn);
     $self->clear_recent_update;
     $self->clear_download_image;
+    $self->clear_download_basename;
     $self->clear_download_sums;
     return $self->log->error($errmsg);
 }
@@ -158,6 +178,7 @@ sub download_chunk
     my ( $self, $fn, $data ) = @_;
 
     $data or return $self->finish_download;
+    $self->log->notice( "Received " . length($data) . " bytes to save in $fn" );
 
     my $fh;
     unless ( open( $fh, ">>", $fn ) )
@@ -165,7 +186,7 @@ sub download_chunk
         return $self->abort_download( $fn, $! );
     }
 
-    syswrite( $fh, $data ) or return $self->abort_download( $fn, "Cannot open $fn for appending: $!" );
+    syswrite( $fh, $data, length($data) ) or return $self->abort_download( $fn, "Cannot open $fn for appending: $!" );
     close($fh) or return $self->abort_download( $fn, $! );
 }
 
@@ -184,6 +205,9 @@ sub prove_download
     my $save_chksum = $self->download_sums;
     my $chksums_ok  = 0;
 
+    # XXX silent prove? partial downloaded?
+    -f $save_fn or return;
+
     if ( defined( $save_chksum->{rmd160} ) )
     {
         my $string = eval {
@@ -191,10 +215,11 @@ sub prove_download
             my $fh;
             open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
 
+            seek( $fh, 0, 0 );
             my $context = Crypt::RIPEMD160->new;
             $context->reset();
             $context->addfile($fh);
-            $context->hexdigest();
+            unpack( "H*", $context->digest() );
         };
 
         # XXX $string might be undef here which causes a warning ...
@@ -206,7 +231,7 @@ sub prove_download
     {
         my $string = eval {
             require_module("Digest::SHA");
-            $sha = Digest::SHA->new("sha1");
+            my $sha = Digest::SHA->new("sha1");
             $sha->addfile($save_fn);
             $sha->hexdigest;
         };
@@ -220,7 +245,7 @@ sub prove_download
     {
         my $string = eval {
             require_module("Digest::SHA");
-            $sha = Digest::SHA->new("sha256");
+            my $sha = Digest::SHA->new("sha256");
             $sha->addfile($save_fn);
             $sha->hexdigest;
         };
@@ -234,7 +259,7 @@ sub prove_download
     {
         my $string = eval {
             require_module("Digest::SHA");
-            $sha = Digest::SHA->new("sha384");
+            my $sha = Digest::SHA->new("sha384");
             $sha->addfile($save_fn);
             $sha->hexdigest;
         };
@@ -248,7 +273,7 @@ sub prove_download
     {
         my $string = eval {
             require_module("Digest::SHA");
-            $sha = Digest::SHA->new("sha512");
+            my $sha = Digest::SHA->new("sha512");
             $sha->addfile($save_fn);
             $sha->hexdigest;
         };
@@ -263,7 +288,7 @@ sub prove_download
         my $string = eval {
 
             require_module("Digest::MD5");
-            $md5 = Digest::MD5->new();
+            my $md5 = Digest::MD5->new();
             my $fh;
             open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
 
@@ -281,7 +306,7 @@ sub prove_download
         my $string = eval {
 
             require_module("Digest::MD6");
-            $md6 = Digest::MD6->new();
+            my $md6 = Digest::MD6->new();
             my $fh;
             open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
 

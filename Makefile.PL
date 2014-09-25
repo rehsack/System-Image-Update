@@ -10,6 +10,7 @@ my %RUN_DEPS = (
     'Class::Load'                => 0,
     'DateTime'                   => 0,
     'DateTime::Format::Strptime' => 0,
+    'File::Slurp::Tiny'          => 0,
     'Module::Runtime'            => 0,
     'Moo'                        => 0,
     'MooX::Log::Any'             => 0,
@@ -28,7 +29,7 @@ my %TEST_DEPS = (
 );
 
 WriteMakefile1(
-    MIN_PERL_VERSION => '5.012',
+    MIN_PERL_VERSION => '5.014',
     META_ADD         => {
         'meta-spec' => { version => 2 },
         resources   => {
@@ -73,6 +74,7 @@ WriteMakefile1(
     AUTHOR             => q{Jens Rehsack <rehsack@cpan.org>},
     VERSION_FROM       => 'lib/System/Image/Update.pm',
     ABSTRACT_FROM      => 'lib/System/Image/Update.pm',
+    EXE_FILES          => [qw(bin/sysimg_update)],
     LICENSE            => 'Artistic_2_0',
     PL_FILES           => {},
     CONFIGURE_REQUIRES => \%CONFIGURE_DEPS,

@@ -1,0 +1,10 @@
+{
+    "status":"scan",
+    "log_adapter" : [
+        "Dispatch",
+	"outputs", [
+	    [ "File",   "min_level", "debug", "filename", "sysimg_update.log", "newline", 1, "mode", ">>" ],
+	    [ "Screen", "min_level", "notice", "newline", 1, "stderr", 1 ]
+	]
+    ]
+}

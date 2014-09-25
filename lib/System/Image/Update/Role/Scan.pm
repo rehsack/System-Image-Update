@@ -9,6 +9,8 @@ use POSIX qw();
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
 
+our $VERSION = "0.001";
+
 my $default_update_uri = "http://update.homepilot.de/common/";
 has update_uri => (
     is      => "ro",
@@ -31,7 +33,7 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    $self->update_uri eq $default_manifest_uri         or $collect_savable_config->{update_uri}      = $self->update_uri;
+    $self->update_uri eq $default_update_uri           or $collect_savable_config->{update_uri}      = $self->update_uri;
     $self->update_manifest eq $default_update_manifest or $collect_savable_config->{update_manifest} = $self->update_manifest;
 
     $collect_savable_config;

@@ -23,7 +23,7 @@ System::Image::Update - helps managing updates of OS images in embedded systems
 
     use System::Image::Update;
 
-    System::Image::Update->new_with_cmd;
+    System::Image::Update->new_with_options;
 
 =cut
 
@@ -44,7 +44,7 @@ sub run
 {
     my $self = shift;
     my $cb   = $self->status;
-    $self->check4update;
+    -f $self->update_manifest and $self->check4update;
     $self->$cb;
     $self->loop->run;
 }

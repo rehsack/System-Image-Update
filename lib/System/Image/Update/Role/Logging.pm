@@ -6,6 +6,8 @@ use Class::Load qw(load_class);
 
 with "MooX::Log::Any";
 
+our $VERSION = "0.001";
+
 has log_adapter => (
     is       => "ro",
     required => 1,

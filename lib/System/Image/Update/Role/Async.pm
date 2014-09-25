@@ -8,6 +8,8 @@ use IO::Async::Loop;
 use IO::Async::Timer::Absolute;
 use IO::Async::Timer::Countdown;
 
+our $VERSION = "0.001";
+
 has loop => ( is => "lazy" );
 
 sub _build_loop
