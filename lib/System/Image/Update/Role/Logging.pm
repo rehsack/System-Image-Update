@@ -1,5 +1,9 @@
 package System::Image::Update::Role::Logging;
 
+use 5.014;
+use strict;
+use warnings FATAL => 'all';
+
 use Moo::Role;
 
 use Class::Load qw(load_class);

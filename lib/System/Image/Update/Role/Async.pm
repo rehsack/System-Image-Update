@@ -1,5 +1,9 @@
 package System::Image::Update::Role::Async;
 
+use 5.014;
+use strict;
+use warnings FATAL => 'all';
+
 use Moo::Role;
 
 use IO::Async;

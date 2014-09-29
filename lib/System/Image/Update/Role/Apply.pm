@@ -1,5 +1,9 @@
 package System::Image::Update::Role::Apply;
 
+use 5.014;
+use strict;
+use warnings FATAL => 'all';
+
 use Moo::Role;
 
 use File::Copy qw(move);
