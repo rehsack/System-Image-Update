@@ -1,5 +1,9 @@
 package System::Image::Update::Role::Download;
 
+use 5.014;
+use strict;
+use warnings FATAL => 'all';
+
 use Moo::Role;
 use 5.014;
 
@@ -33,9 +37,10 @@ sub _trigger_recent_update
     $new_val->{estimated_dl_ts} <= $now and $self->wakeup_in( 1, "download" );
 }
 
+my $default_download_file = -x "/imx6/xbmc/bin/xbmc" ? "hp2+xbmc" : "hp2";
 has download_file => (
     is      => "ro",
-    default => "hp2"
+    default => $default_download_file,
 );
 
 has min_download_wait => (
@@ -102,7 +107,8 @@ sub determine_estimated_dl_ts
         pattern  => "%FT%T",
         on_error => sub { $self->log->error( $_[1] ); 1 }
     );
-    looks_like_number( $new_val->{release_ts} ) or $new_val->{release_ts} = $strp->parse_datetime( $new_val->{apply} )->epoch;
+    looks_like_number( $new_val->{release_ts} )
+      or $new_val->{release_ts} = $strp->parse_datetime( $new_val->{release_ts} )->epoch;
     my $release_ts = $new_val->{release_ts};
     if ( $new_val->{apply} )
     {
@@ -125,14 +131,15 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    $self->has_recent_update and $collect_savable_config->{recent_update} = $self->recent_update;
+    $self->has_recent_update                       and $collect_savable_config->{recent_update} = $self->recent_update;
+    $self->download_file ne $default_download_file and $collect_savable_config->{download_file} = $self->download_file;
 
     $collect_savable_config;
 };
 
 around reset_config => sub {
-    my $next                   = shift;
-    my $self                   = shift;
+    my $next = shift;
+    my $self = shift;
     $self->$next(@_);
 
     $self->clear_download_image;
