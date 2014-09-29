@@ -37,7 +37,7 @@ sub _trigger_status
 {
     my ( $self, $new_val ) = @_;
     my $cur_val = $self->status;
-    $self->wakeup_in( 5, "save_config" );
+    $self->wakeup_in( 1, "save_config" );
 }
 
 sub run
@@ -54,6 +54,12 @@ sub collect_savable_config
     my $self = shift;
     my %savable_config = ( status => $self->status );
     \%savable_config;
+}
+
+sub reset_config
+{
+    my $self = shift;
+    $self->status("scan");
 }
 
 sub save_config

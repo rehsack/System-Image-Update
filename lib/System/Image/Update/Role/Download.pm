@@ -130,6 +130,19 @@ around collect_savable_config => sub {
     $collect_savable_config;
 };
 
+around reset_config => sub {
+    my $next                   = shift;
+    my $self                   = shift;
+    $self->$next(@_);
+
+    $self->clear_download_image;
+    $self->clear_download_basename;
+    $self->clear_download_sums;
+    $self->clear_recent_update;
+
+    return;
+};
+
 my $download_response_future;
 
 sub download
@@ -166,10 +179,8 @@ sub abort_download
     defined $download_response_future and $download_response_future->cancel;
     $download_response_future = undef;
     # -e $fn and unlink($fn);
-    $self->clear_recent_update;
-    $self->clear_download_image;
-    $self->clear_download_basename;
-    $self->clear_download_sums;
+    $self->reset_config;
+
     return $self->log->error($errmsg);
 }
 

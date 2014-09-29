@@ -41,7 +41,10 @@ sub apply4real
     move( $self->download_image, $self->image_location )
       or return $self->log->error( "Cannot rename " . $self->download_image . " to " . $self->image_location . ": $!" );
 
-    system( i$self->flash_command ) or return $self->log->error("Cannot send execute flash command: $!");
+    $self->reset_config;
+    $self->save_config;
+
+    system( $self->flash_command ) or return $self->log->error("Cannot send execute flash command: $!");
 }
 
 sub apply
@@ -50,14 +53,11 @@ sub apply
 
     $self->has_recent_update or return;
 
-    $self->status("scan");
-    $self->clear_recent_update;
-    $self->clear_download_image;
-    $self->clear_download_basename;
-    $self->clear_download_sums;
-    $self->save_config;
-
     $self->apply4real;
+
+    # this path is passed in case of apply-error
+    $self->reset_config;
+    $self->save_config;
 
     return;
 }
