@@ -1,5 +1,9 @@
 package System::Image::Update::Role::Scan;
 
+use 5.014;
+use strict;
+use warnings FATAL => 'all';
+
 use Moo::Role;
 
 use DateTime::Format::Strptime qw();
@@ -146,10 +150,7 @@ sub check4update
     {
         my $update_time = $strp->parse_datetime($avail_update);
         $update_time or next;
-        if ( $update_time > $kdate )
-        {
-            $recent_update = $avail_update;
-        }
+        $update_time->epoch > $kdate->epoch and $recent_update = $avail_update;
     }
     $recent_update and $self->recent_update(
         {
