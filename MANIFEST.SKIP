@@ -12,6 +12,7 @@
 ^Build\.bat$
 \.Inline/.*
 _Inline/.*
+\.log$
 \.bak$
 \.tar$
 \.tgz$
@@ -26,7 +27,7 @@ _Inline/.*
 ~$
 .*\.planner
 ^\..*
-Packager-Utils-.*
+System-Image-Update-.*
 \bxt
 ^MYMETA\.json$
 ^MYMETA\..*$

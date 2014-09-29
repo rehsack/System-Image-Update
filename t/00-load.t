@@ -7,7 +7,7 @@ use Test::More;
 plan tests => 1;
 
 BEGIN {
-    use_ok( 'Packager::Utils' ) || print "Bail out!\n";
+    use_ok( 'System::Image::Update' ) || print "Bail out!\n";
 }
 
-diag( "Testing Packager::Utils $Packager::Utils::VERSION, Perl $], $^X" );
+diag( "Testing System::Image::Update $System::Image::Update::VERSION, Perl $], $^X" );
