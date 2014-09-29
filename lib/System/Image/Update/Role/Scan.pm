@@ -3,7 +3,10 @@ package System::Image::Update::Role::Scan;
 use Moo::Role;
 
 use DateTime::Format::Strptime qw();
+use File::Basename qw(dirname);
+use File::Path qw(make_path);
 use File::Slurp::Tiny qw(read_file write_file);
+use File::Spec;
 use File::stat;
 use POSIX qw();
 
@@ -104,6 +107,7 @@ sub analyse_newer_manifest
         return;
     }
 
+    make_path( dirname( $self->update_manifest ) );
     write_file( $self->update_manifest, $response->content );
     $self->wakeup_in( 1, "check4update" );
 }
@@ -121,19 +125,17 @@ sub check4update
       or return $self->log->error("Can't extract kernel release date");
     my ( $wday, $mon, $day, $hour, $minute, $second, $tz, $year ) = ( $1, $2, $3, $4, $5, $6, $7, $8 );
     my $kdate = DateTime->new(
-        year      => $year,
-        month     => $month_by_name{$mon},
-        day       => $day,
-        hour      => $hour,
-        minute    => $minute,
-        second    => $second,
-        time_zone => $tz
+        year   => $year,
+        month  => $month_by_name{$mon},
+        day    => $day,
+        hour   => $hour,
+        minute => $minute,
+        second => $second,
     );
 
     my $strp = DateTime::Format::Strptime->new(
-        pattern   => "%FT%T",
-        time_zone => $tz,
-        on_error  => sub { $self->log->error( $_[1] ); 1 }
+        pattern  => "%FT%T",
+        on_error => sub { $self->log->error( $_[1] ); 1 }
     );
 
     my $mfcnt    = read_file( $self->update_manifest );

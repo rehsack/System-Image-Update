@@ -2,9 +2,21 @@ package System::Image::Update::Role::Apply;
 
 use Moo::Role;
 
+use File::Copy qw(move);
+use File::Path qw(make_path);
+
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
 our $VERSION = "0.001";
+
+has image_location => (
+    is      => "ro",
+    default => "/data/.flashimg"
+);
+has flash_command => (
+    is      => "ro",
+    default => "/etc/init.d/flash-device.sh"
+);
 
 sub check4apply
 {
@@ -21,19 +33,33 @@ sub check4apply
     }
 }
 
+sub apply4real
+{
+    my $self = shift;
+
+    make_path( $self->image_location );
+    move( $self->download_image, $self->image_location )
+      or return $self->log->error( "Cannot rename " . $self->download_image . " to " . $self->image_location . ": $!" );
+
+    system( i$self->flash_command ) or return $self->log->error("Cannot send execute flash command: $!");
+}
+
 sub apply
 {
     my $self = shift;
 
-    $self->has_recent_update or goto done;
+    $self->has_recent_update or return;
 
-    rename $self->download_image, "/data/flashimg/" and open( my $ath, "| at now" );
-    ref $ath or return;
-    print $ath "/bin/sh /etc/init.d/flash-device.sh\n";
-    close $ath;
+    $self->status("scan");
+    $self->clear_recent_update;
+    $self->clear_download_image;
+    $self->clear_download_basename;
+    $self->clear_download_sums;
+    $self->save_config;
 
-  done:
-    return $self->status("scan");
+    $self->apply4real;
+
+    return;
 }
 
 1;

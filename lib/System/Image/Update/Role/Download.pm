@@ -178,7 +178,6 @@ sub download_chunk
     my ( $self, $fn, $data ) = @_;
 
     $data or return $self->finish_download;
-    $self->log->notice( "Received " . length($data) . " bytes to save in $fn" );
 
     my $fh;
     unless ( open( $fh, ">>", $fn ) )
