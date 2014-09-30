@@ -26,12 +26,13 @@ sub check4apply
 {
     my $self = shift;
 
+    $self->log->debug("Starting check4apply ...");
     $self->has_recent_update or return;
 
     if ( $self->recent_update->{apply} )
     {
-        my $img_fn = File::Spec->catfile( $self->download_dir, $self->recent_update->{ $self->download_file } );
-        -e $img_fn or return;
+        my $img_fn = $self->download_image;
+        -e $img_fn or return $self->log->error("Cannot find $img_fn: $!");
 
         $self->wakeup_at( $self->recent_update->{apply}, "apply" );
     }
@@ -57,6 +58,7 @@ sub apply
 
     $self->has_recent_update or return;
 
+    $self->log->debug("Starting apply ...");
     $self->apply4real;
 
     # this path is passed in case of apply-error

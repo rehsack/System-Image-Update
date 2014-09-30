@@ -155,6 +155,7 @@ my $download_response_future;
 sub download
 {
     my $self = shift;
+    $self->log->debug("Starting download ...");
     $download_response_future and return;
     $self->has_recent_update or return;
     $self->status("download");
@@ -182,6 +183,7 @@ sub download
 sub abort_download
 {
     my ( $self, $fn, $errmsg ) = @_;
+    $self->log->debug("Aborting download ...");
     $self->status("scan");
     defined $download_response_future and $download_response_future->cancel;
     $download_response_future = undef;
@@ -210,6 +212,7 @@ sub download_chunk
 sub finish_download
 {
     my $self = shift;
+    $self->log->debug("Starting finish_download ...");
     $self->prove_download or return;
     $self->check4apply;
 }

@@ -39,6 +39,7 @@ sub wakeup_at
             $self->$cb_method;
         },
     );
+    $self->log->debug("Scheduling $cb_method at $when");
 
     $self->loop->add($timer);
     $timer;
@@ -56,6 +57,7 @@ sub wakeup_in
         remove_on_expire => 1,
     );
 
+    $self->log->debug("Scheduling $cb_method in $in seconds");
     $timer->start;
     $self->loop->add($timer);
     $timer;

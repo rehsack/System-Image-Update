@@ -13,6 +13,7 @@ my %RUN_DEPS = (
     'File::Basename'             => 0,
     'File::Copy'                 => 0,
     'File::Path'                 => 0,
+    'File::LibMagic'             => 0,
     'File::Slurp::Tiny'          => 0,
     'File::Spec'                 => 0,
     'Module::Runtime'            => 0,
