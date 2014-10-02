@@ -125,7 +125,7 @@ sub check4update
     my $self   = shift;
     my $kident = File::LibMagic->new()->describe_filename("/boot/uImage");
     $kident =~
-      m,(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d+)\s(\d+):(\d+):(\d+)\s(\d+),
+      m,(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+),
       or return $self->log->error("Can't extract kernel release date");
     my ( $wday, $mon, $day, $hour, $minute, $second, $year, $kmatch ) = ( $1, $2, $3, $4, $5, $6, $7, $& );
     my $kdate = DateTime->new(
