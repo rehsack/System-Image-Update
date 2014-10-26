@@ -27,6 +27,47 @@ System::Image::Update - helps managing updates of OS images in embedded systems
 
     System::Image::Update->new_with_options;
 
+=head1 ATTRIBUTES
+
+=head2 status
+
+Lazy string contains the action to be executed next. Reasonably contains one of
+
+=over 4
+
+=item scan
+
+See L<System::Image::Update::Role::Scan>
+
+=item check
+
+See L<System::Image::Update::Role::Check>
+
+=item download
+
+See L<System::Image::Update::Role::Download>
+
+=item prove
+
+See L<System::Image::Update::Role::Prove>
+
+=item apply
+
+See L<System::Image::Update::Role::Apply>
+
+=back
+
+To force a specific action, create a new object with an initializer for scan, eg.
+
+    use System::Image::Update;
+
+    System::Image::Update->new_with_options(status => "download");
+
+or from outside:
+
+    sed -e 's/{$/{"status": "check",/' /etc/sysimg_update.json
+    svc -t /etc/daemontools/services/sysimg_update
+
 =cut
 
 has status => (
@@ -46,6 +87,14 @@ sub _build_status
     return $status;
 }
 
+=head1 METHODS
+
+=head2 run
+
+starts the main loop after it initiates status build in case of guessing status.
+
+=cut
+
 sub run
 {
     my $self = shift;
@@ -55,6 +104,12 @@ sub run
     $self->loop->run;
 }
 
+=head2 collect_savable_config
+
+routine being called when config saving is wanted
+
+=cut
+
 sub collect_savable_config
 {
     my $self = shift;
@@ -62,11 +117,24 @@ sub collect_savable_config
     \%savable_config;
 }
 
+=head2 reset_config
+
+routine being called to start fresh
+
+=cut
+
 sub reset_config
 {
     my $self = shift;
     $self->status("scan");
 }
+
+=head2 save_config
+
+Saves result of L</collect_savable_config> in first file got via
+L<MooX::ConfigFromFile|MooX::ConfigFromFile::Role/config_files>.
+
+=cut
 
 sub save_config
 {
