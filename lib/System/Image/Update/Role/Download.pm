@@ -187,7 +187,7 @@ sub abort_download
     $self->status("scan");
     defined $download_response_future and $download_response_future->cancel;
     $download_response_future = undef;
-    # -e $fn and unlink($fn);
+    -e $fn and unlink($fn);
     $self->reset_config;
 
     return $self->log->error($errmsg);
