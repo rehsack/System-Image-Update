@@ -13,7 +13,8 @@ use JSON      ();
 use File::Slurp::Tiny qw(write_file);
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::Scan",
-  "System::Image::Update::Role::Download", "System::Image::Update::Role::Apply";
+  "System::Image::Update::Role::Check",
+  "System::Image::Update::Role::Download", "System::Image::Update::Role::Prove", "System::Image::Update::Role::Apply";
 
 =head1 NAME
 

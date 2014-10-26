@@ -200,146 +200,17 @@ sub download_chunk
     $data or return $self->finish_download;
 
     my $fh;
-    unless ( open( $fh, ">>", $fn ) )
-    {
-        return $self->abort_download( $fn, $! );
-    }
+    open( $fh, ">>", $fn ) or return $self->abort_download( $fn, "Cannot open $fn for appending: $!" );
 
-    syswrite( $fh, $data, length($data) ) or return $self->abort_download( $fn, "Cannot open $fn for appending: $!" );
-    close($fh) or return $self->abort_download( $fn, $! );
+    syswrite( $fh, $data, length($data) ) or return $self->abort_download( $fn, "Cannot append to $fn: $!" );
+    close($fh) or return $self->abort_download( $fn, "Error closing $fn: $!" );
 }
 
 sub finish_download
 {
     my $self = shift;
     $self->log->debug("Starting finish_download ...");
-    $self->prove_download or return;
-    $self->check4apply;
-}
-
-sub prove_download
-{
-    my $self = shift;
-    $self->has_recent_update or return;
-    my $save_fn     = $self->download_image;
-    my $save_chksum = $self->download_sums;
-    my $chksums_ok  = 0;
-
-    # XXX silent prove? partial downloaded?
-    -f $save_fn or return;
-
-    if ( defined( $save_chksum->{rmd160} ) )
-    {
-        my $string = eval {
-            require_module("Crypt::RIPEMD160");
-            my $fh;
-            open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
-
-            seek( $fh, 0, 0 );
-            my $context = Crypt::RIPEMD160->new;
-            $context->reset();
-            $context->addfile($fh);
-            unpack( "H*", $context->digest() );
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{rmd160} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    if ( defined( $save_chksum->{sha1} ) )
-    {
-        my $string = eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha1");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{sha1} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    if ( defined( $save_chksum->{sha1_256} ) )
-    {
-        my $string = eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha256");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{sha1_256} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    if ( defined( $save_chksum->{sha1_384} ) )
-    {
-        my $string = eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha384");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{sha1_384} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    if ( defined( $save_chksum->{sha1_512} ) )
-    {
-        my $string = eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha512");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{sha1_512} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    if ( defined( $save_chksum->{md5} ) )
-    {
-        my $string = eval {
-
-            require_module("Digest::MD5");
-            my $md5 = Digest::MD5->new();
-            my $fh;
-            open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
-
-            $md5->addfile($fh);
-            $md5->hexdigest;
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{md5} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    if ( defined( $save_chksum->{md6} ) )
-    {
-        my $string = eval {
-
-            require_module("Digest::MD6");
-            my $md6 = Digest::MD6->new();
-            my $fh;
-            open( $fh, "<", $save_fn ) or return $self->abort_download( $save_fn, "Error opening $save_fn: $!" );
-
-            $md6->addfile($fh);
-            $md6->hexdigest;
-        };
-
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{md6} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
-        ++$chksums_ok;
-    }
-
-    $chksums_ok >= 2 or return $self->abort_download( $self->download_image, "Not enought checksums passed" );
+    $self->wakeup_in( 1, "prove" );
 }
 
 1;
