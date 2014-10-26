@@ -6,6 +6,9 @@ use warnings FATAL => 'all';
 
 use Moo::Role;
 
+use File::stat;
+use Module::Runtime qw(require_module);
+
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
 my %checksums = (
@@ -94,6 +97,7 @@ sub prove
 
     # XXX silent prove? partial downloaded?
     -f $save_fn or return $self->status("scan");
+    defined $save_chksum->{size} and stat( $save_fn )->size != $save_chksum->{size} and return $self->status("check");
 
     $self->status("prove");
 
@@ -109,6 +113,8 @@ sub prove
     }
 
     $chksums_ok >= 2 or return $self->abort_download( $self->download_image, "Not enought checksums passed" );
+
+    $self->wakeup_in( 1, "check4apply" );
 }
 
 1;

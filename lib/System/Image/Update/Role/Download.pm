@@ -12,8 +12,6 @@ with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging
 use File::Basename qw();
 use File::Spec qw();
 
-use Module::Runtime qw(require_module);
-
 use Scalar::Util qw(looks_like_number);
 
 our $VERSION = "0.001";
@@ -29,7 +27,7 @@ sub _trigger_recent_update
 {
     my ( $self, $new_val ) = @_;
     exists $new_val->{estimated_dl_ts} or $self->determine_estimated_dl_ts($new_val);
-    $self->wakeup_in( 5, "save_config" );
+    $self->wakeup_in( 1, "save_config" );
     my $now = DateTime->now->epoch;
     $new_val->{estimated_dl_ts} > $now
       and $self->wakeup_at( $new_val->{estimated_dl_ts}, "download" )

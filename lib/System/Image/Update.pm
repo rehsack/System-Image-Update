@@ -12,9 +12,10 @@ use IO::Async ();
 use JSON      ();
 use File::Slurp::Tiny qw(write_file);
 
-with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::Scan",
-  "System::Image::Update::Role::Check",
-  "System::Image::Update::Role::Download", "System::Image::Update::Role::Prove", "System::Image::Update::Role::Apply";
+with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging",
+  "System::Image::Update::Role::Scan",     "System::Image::Update::Role::Check",
+  "System::Image::Update::Role::Download", "System::Image::Update::Role::Prove",
+  "System::Image::Update::Role::Apply";
 
 =head1 NAME
 
@@ -30,22 +31,25 @@ System::Image::Update - helps managing updates of OS images in embedded systems
 
 has status => (
     is      => "rw",
-    trigger => 1,
+    lazy => 1,
     isa     => sub { __PACKAGE__->can( $_[0] ) or die "Invalid status: $_[0]" }
 );
 
-sub _trigger_status
+sub _build_status
 {
-    my ( $self, $new_val ) = @_;
-    my $cur_val = $self->status;
-    $self->wakeup_in( 1, "save_config" );
+    my $self = shift;
+    my $status = "scan";
+
+    -f $self->update_manifest and $status = "check";
+    $self->has_recent_update and -e $self->download_image and $status = "prove";
+
+    return $status;
 }
 
 sub run
 {
     my $self = shift;
     my $cb   = $self->status;
-    -f $self->update_manifest and $self->check4update;
     $self->$cb;
     $self->loop->run;
 }
@@ -53,7 +57,7 @@ sub run
 sub collect_savable_config
 {
     my $self = shift;
-    my %savable_config = ( status => $self->status );
+    my %savable_config = ();
     \%savable_config;
 }
 

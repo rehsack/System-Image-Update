@@ -1,5 +1,4 @@
 {
-    "status":"scan",
     "log_adapter" : [
         "Dispatch",
 	"outputs", [
