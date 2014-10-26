@@ -50,7 +50,8 @@ sub run
 {
     my $self = shift;
     my $cb   = $self->status;
-    $self->$cb;
+    $self->scan;
+    $cb ne "scan" and $self->wakeup_in( 60, $cb );
     $self->loop->run;
 }
 
