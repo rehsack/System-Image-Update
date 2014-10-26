@@ -27,19 +27,42 @@ has scan_interval => (
     default => 6 * 60 * 60,
 );
 
-my $default_update_manifest = "/data/.update/manifest.json";
-has update_manifest => (
+my $default_update_manifest_basename = "manifest.json";
+has update_manifest_basename => (
     is      => "ro",
-    default => $default_update_manifest,
+    default => $default_update_manifest_basename,
 );
+
+my $default_update_manifest_dirname = "/data/.update/";
+has update_manifest_dirname => (
+    is      => "ro",
+    default => $default_update_manifest_dirname,
+);
+
+has update_manifest_uri => ( is => "lazy" );
+
+sub _build_update_manifest_uri { my $self = shift; File::Spec->catfile( $self->update_uri, $self->update_manifest_basename ); }
+
+has update_manifest => (
+    is => "lazy",
+);
+
+sub _build_update_manifest
+{
+    my $self = shift;
+    File::Spec->catfile( $self->update_manifest_dirname, $self->update_manifest_basename );
+}
 
 around collect_savable_config => sub {
     my $next                   = shift;
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    $self->update_uri eq $default_update_uri           or $collect_savable_config->{update_uri}      = $self->update_uri;
-    $self->update_manifest eq $default_update_manifest or $collect_savable_config->{update_manifest} = $self->update_manifest;
+    $self->update_uri eq $default_update_uri or $collect_savable_config->{update_uri} = $self->update_uri;
+    $self->update_manifest_dirname eq $default_update_manifest_dirname
+      or $collect_savable_config->{update_manifest_dirname} = $self->update_manifest_dirname;
+    $self->update_manifest_basename eq $default_update_manifest_basename
+      or $collect_savable_config->{update_manifest_basename} = $self->update_manifest_basename;
 
     $collect_savable_config;
 };
@@ -54,7 +77,7 @@ sub scan
     $extra_scan or $scan_timer = undef;
 
     my ($response) = $http->do_request(
-        uri         => URI->new( $self->update_uri . "manifest.json" ),
+        uri         => URI->new( $self->update_manifest_uri ),
         method      => "HEAD",
         user        => $self->http_user,
         pass        => $self->http_passwd,
@@ -77,7 +100,7 @@ sub check_newer_manifest
     my ( $self, $response ) = @_;
     if ( $response->code != 200 )
     {
-        $self->log->error( "Error fetching " . $self->update_uri . "manifest.json: " . status_message( $response->code ) );
+        $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . status_message( $response->code ) );
         goto done;
     }
 
@@ -88,7 +111,7 @@ sub check_newer_manifest
     {
         my $http = $self->http;
         my ($response) = $http->do_request(
-            uri         => URI->new( $self->update_uri . "manifest.json" ),
+            uri         => URI->new( $self->update_manifest_uri ),
             method      => "GET",
             user        => $self->http_user,
             pass        => $self->http_passwd,
@@ -106,7 +129,7 @@ sub analyse_newer_manifest
     my ( $self, $response ) = @_;
     if ( $response->code != 200 )
     {
-        $self->log->error( "Error fetching " . $self->update_uri . "manifest.json: " . status_message( $response->code ) );
+        $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . status_message( $response->code ) );
         return;
     }
 
