@@ -17,15 +17,22 @@ use File::Path qw(make_path);
 use File::Slurp::Tiny qw(read_file write_file);
 use File::Spec;
 use File::stat;
+use URI;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
 
 our $VERSION = "0.001";
 
-my $default_update_uri = "http://update.homepilot.de/common/";
-has update_uri => (
+my $default_update_server = "update.homepilot.de";
+has update_server => (
     is      => "ro",
-    default => $default_update_uri,
+    default => $default_update_server,
+);
+
+my $default_update_path = "common";
+has update_path => (
+    is      => "ro",
+    default => $default_update_path,
 );
 
 has scan_interval => (
@@ -47,7 +54,15 @@ has update_manifest_dirname => (
 
 has update_manifest_uri => ( is => "lazy" );
 
-sub _build_update_manifest_uri { my $self = shift; File::Spec->catfile( $self->update_uri, $self->update_manifest_basename ); }
+sub _build_update_manifest_uri
+{
+    my $self = shift;
+    my $u    = URI->new();
+    $u->scheme("http");
+    $u->host( $self->update_server );
+    $u->path( File::Spec->catfile( $self->update_path, $self->update_manifest_basename ) );
+    $u->as_string;
+}
 
 has update_manifest => (
     is => "lazy",
@@ -64,7 +79,8 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    $self->update_uri eq $default_update_uri or $collect_savable_config->{update_uri} = $self->update_uri;
+    $self->update_server eq $default_update_server or $collect_savable_config->{update_server} = $self->update_server;
+    $self->update_path eq $default_update_path     or $collect_savable_config->{update_path}   = $self->update_path;
     $self->update_manifest_dirname eq $default_update_manifest_dirname
       or $collect_savable_config->{update_manifest_dirname} = $self->update_manifest_dirname;
     $self->update_manifest_basename eq $default_update_manifest_basename

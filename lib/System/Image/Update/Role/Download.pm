@@ -165,15 +165,19 @@ sub download
     my $http = $self->http;
 
     # XXX skip download when image is already there and valid
-    $self->prove_download and return $self->finish_download;
+    -f $self->download_image and $self->prove and return;
 
     my $save_fn = $self->download_image;
     # XXX add Content-Range as in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.16
     #     and truncate file in that case ...
     -e $save_fn and unlink($save_fn);
 
+    my $u = URI->new();
+    $u->scheme("http");
+    $u->host( $self->update_server );
+    $u->path( File::Spec->catfile( $self->update_path, $self->download_basename ) );
     ($download_response_future) = $http->do_request(
-        uri       => URI->new( $self->update_uri . $self->download_basename ),
+        uri       => $u,
         method    => "GET",
         user      => $self->http_user,
         pass      => $self->http_passwd,

@@ -72,13 +72,14 @@ or from outside:
 
 has status => (
     is      => "rw",
-    lazy => 1,
+    lazy    => 1,
+    builder => 1,
     isa     => sub { __PACKAGE__->can( $_[0] ) or die "Invalid status: $_[0]" }
 );
 
 sub _build_status
 {
-    my $self = shift;
+    my $self   = shift;
     my $status = "scan";
 
     -f $self->update_manifest and $status = "check";
@@ -100,7 +101,7 @@ sub run
     my $self = shift;
     my $cb   = $self->status;
     $self->scan;
-    $cb ne "scan" and $self->wakeup_in( 60, $cb );
+    $cb ne "scan" and $self->wakeup_in( 30, $cb );
     $self->loop->run;
 }
 
@@ -112,7 +113,7 @@ routine being called when config saving is wanted
 
 sub collect_savable_config
 {
-    my $self = shift;
+    my $self           = shift;
     my %savable_config = ();
     \%savable_config;
 }

@@ -103,7 +103,7 @@ sub prove
 
     # XXX silent prove? partial downloaded?
     -f $save_fn or return $self->status("scan");
-    defined $save_chksum->{size} and stat( $save_fn )->size != $save_chksum->{size} and return $self->status("check");
+    defined $save_chksum->{size} and stat($save_fn)->size != $save_chksum->{size} and return $self->status("check");
 
     $self->status("prove");
 
@@ -114,7 +114,7 @@ sub prove
         defined $string or next;    # kind of error ...
 
         # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{rmd160} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        $string eq $save_chksum->{$chksum} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
         ++$chksums_ok;
     }
 
