@@ -15,16 +15,47 @@ use Moo::Role;
 use DateTime::Format::Strptime qw();
 use File::LibMagic qw();
 use File::Slurp::Tiny qw(read_file);
+use Scalar::Util qw/blessed/;
+use version;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
 
 my @month_names = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
 my %month_by_name = map { $month_names[$_] => $_ + 1 } ( 0 .. $#month_names );
 
-sub check
+has _depreciated_scanner => ( is => "lazy" );
+
+sub _build__depreciated_scanner
 {
     my $self = shift;
-    $self->status("check");
+    DateTime::Format::Strptime->new(
+        pattern  => "%FT%T",
+        on_error => sub { $self->log->error( $_[1] ); 1 }
+    );
+}
+
+sub _build_fake_ver
+{
+    my ( $self, $dt ) = @_;
+    blessed $dt or $dt = $self->_depreciated_scanner->parse_datetime($dt);
+    version->new( "0.0." . $dt->epoch );
+}
+
+has installed_version_file => (
+    is      => "ro",
+    default => "/opt/record-installed/system-image"
+);
+
+has installed_version => (
+    is => "lazy",
+);
+
+sub _build_installed_version
+{
+    my $self = shift;
+    -f $self->installed_version_file
+      and return version->new( ( split( "-", read_file( $self->installed_version_file, chomp => 1 ) ) )[0] );
+
     my $kident = File::LibMagic->new()->describe_filename("/boot/uImage");
     $kident =~
       m,(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+),
@@ -39,23 +70,43 @@ sub check
         second => $second,
     );
 
-    my $strp = DateTime::Format::Strptime->new(
-        pattern  => "%FT%T",
-        on_error => sub { $self->log->error( $_[1] ); 1 }
-    );
+    my $fake_ver = $self->_build_fake_ver($kdate);
+    $self->log->debug("Faking kernel build stamp $kmatch as version $fake_ver");
+    $fake_ver;
+}
+
+sub _cmp_versions
+{
+    my ( $self, $provided_version, $installed_version ) = @_;
+    my $iddf = $self->can("_is_default_download_file");
+    $iddf or return $provided_version > $installed_version;
+    $iddf->($self) and return $provided_version > $installed_version;
+    $provided_version >= $installed_version;
+}
+
+sub check
+{
+    my $self = shift;
 
     my $mfcnt    = read_file( $self->update_manifest );
     my $manifest = JSON->new->decode($mfcnt);
 
-    my $recent_update;
-    foreach my $avail_update ( sort keys %$manifest )
+    my $installed_version = $self->installed_version;
+
+    $self->status("check");
+
+    my ( $recent_update, $recent_ver );
+    foreach my $avail_update ( keys %$manifest )
     {
-        $self->log->debug("Proving whether $avail_update is newer than $kmatch");
-        my $update_time = $strp->parse_datetime($avail_update);
-        $update_time or next;
-        $update_time->epoch > $kdate->epoch
+        my $provided_version = eval { version->new($avail_update); };
+        $@ and $provided_version = $self->_build_fake_ver($avail_update);
+        defined $recent_ver and $self->log->debug("Proving whether $provided_version is newer than chosen $avail_update");
+        defined $recent_ver and $recent_ver >= $provided_version and next;
+        $self->log->debug("Proving whether $provided_version is newer than installed $installed_version");
+              $self->_cmp_versions( $provided_version, $installed_version )
           and $recent_update = $avail_update
-          and $self->log->debug( "Applying because " . $update_time->epoch . " > " . $kdate->epoch );
+          and $recent_ver    = $provided_version
+          and $self->log->debug("Applying $avail_update because $provided_version is more recent than $installed_version");
     }
     $recent_update and $self->recent_update(
         {
