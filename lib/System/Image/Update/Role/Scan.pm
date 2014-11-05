@@ -14,7 +14,7 @@ use Moo::Role;
 
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
-use File::Slurp::Tiny qw(read_file write_file);
+use File::Slurp::Tiny qw(write_file);
 use File::Spec;
 use File::stat;
 use URI;
