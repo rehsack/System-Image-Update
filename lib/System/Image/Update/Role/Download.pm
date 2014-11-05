@@ -46,6 +46,8 @@ has download_file => (
     default => $default_download_file,
 );
 
+sub _is_default_download_file { $_[0]->download_file eq $default_download_file }
+
 has min_download_wait => (
     is      => "ro",
     default => 8 * 24 * 3600
