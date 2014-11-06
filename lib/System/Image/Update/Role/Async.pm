@@ -20,7 +20,10 @@ use IO::Async::Timer::Countdown;
 
 our $VERSION = "0.001";
 
-has loop => ( is => "lazy" );
+has loop => (
+    is        => "lazy",
+    predicate => 1
+);
 
 sub _build_loop
 {
