@@ -96,14 +96,16 @@ my %checksums = (
 sub prove
 {
     my $self = shift;
-    $self->has_recent_update or return $self->status("scan");
+    $self->has_recent_update or return $self->reset_config;
     my $save_fn     = $self->download_image;
     my $save_chksum = $self->download_sums;
     my $chksums_ok  = 0;
 
     # XXX silent prove? partial downloaded?
-    -f $save_fn or return $self->status("scan");
-    defined $save_chksum->{size} and stat($save_fn)->size != $save_chksum->{size} and return $self->status("check");
+    -f $save_fn or return $self->schedule_scan;
+    defined $save_chksum->{size}
+      and stat($save_fn)->size != $save_chksum->{size}
+      and return $self->abort_download( fallback_status => "check" );
 
     $self->status("prove");
 
@@ -114,11 +116,11 @@ sub prove
         defined $string or next;    # kind of error ...
 
         # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{$chksum} or return $self->abort_download( $save_fn, "Invalid checksum for $save_fn" );
+        $string eq $save_chksum->{$chksum} or return $self->abort_download( errmsg => "Invalid checksum for $save_fn" );
         ++$chksums_ok;
     }
 
-    $chksums_ok >= 2 or return $self->abort_download( $self->download_image, "Not enought checksums passed" );
+    $chksums_ok >= 2 or return $self->abort_download( errmsg => "Not enought checksums passed" );
 
     $self->wakeup_in( 1, "check4apply" );
 }

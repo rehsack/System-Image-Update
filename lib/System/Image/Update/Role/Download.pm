@@ -14,6 +14,7 @@ use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
+use Carp qw/confess/;
 use File::Basename qw();
 use File::Spec qw();
 
@@ -31,6 +32,7 @@ has recent_update => (
 sub _trigger_recent_update
 {
     my ( $self, $new_val ) = @_;
+    $self->has_loop or return;
     exists $new_val->{estimated_dl_ts} or $self->determine_estimated_dl_ts($new_val);
     $self->wakeup_in( 1, "save_config" );
     my $now = DateTime->now->epoch;
@@ -69,7 +71,7 @@ has download_basename => (
 sub _build_download_basename
 {
     my $self = shift;
-    $self->has_recent_update or die "No downloadable image without a recent update";
+    $self->has_recent_update or confess "No downloadable image without a recent update";
     my $save_fn = $self->recent_update->{ $self->download_file };
     $save_fn = ( split ";", $save_fn )[0];
 }
@@ -82,7 +84,7 @@ has download_image => (
 sub _build_download_image
 {
     my $self = shift;
-    $self->has_recent_update or die "No downloadable image without a recent update";
+    $self->has_recent_update or confess "No downloadable image without a recent update";
     my $save_fn = $self->recent_update->{ $self->download_file };
     $save_fn = ( split ";", $save_fn )[0];
     $save_fn = File::Spec->catfile( $self->download_dir, $save_fn );
@@ -142,19 +144,6 @@ around collect_savable_config => sub {
     $collect_savable_config;
 };
 
-around reset_config => sub {
-    my $next = shift;
-    my $self = shift;
-    $self->$next(@_);
-
-    $self->clear_download_image;
-    $self->clear_download_basename;
-    $self->clear_download_sums;
-    $self->clear_recent_update;
-
-    return;
-};
-
 my $download_response_future;
 
 sub download
@@ -166,10 +155,10 @@ sub download
     $self->status("download");
     my $http = $self->http;
 
-    # XXX skip download when image is already there and valid
-    -f $self->download_image and $self->prove and return;
-
     my $save_fn = $self->download_image;
+    # XXX skip download when image is already there and valid
+    -f $save_fn and $self->prove and return;
+
     # XXX add Content-Range as in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.16
     #     and truncate file in that case ...
     -e $save_fn and unlink($save_fn);
@@ -189,17 +178,34 @@ sub download
     );
 }
 
-sub abort_download
-{
-    my ( $self, $fn, $errmsg ) = @_;
-    $self->log->debug("Aborting download ...");
-    $self->status("scan");
+around reset_config => sub {
+    my $next = shift;
+    my $self = shift;
+    $self->$next(@_);
+
+    $self->clear_download_image;
+    $self->clear_download_basename;
+    $self->clear_download_sums;
+    $self->clear_recent_update;
+
     defined $download_response_future and $download_response_future->cancel;
     $download_response_future = undef;
-    -e $fn and unlink($fn);
-    $self->reset_config;
 
-    return $self->log->error($errmsg);
+    return;
+};
+
+sub abort_download
+{
+    my ( $self, %options ) = @_;
+
+    $self->has_recent_update and my $fn = $self->download_image;
+
+    $self->log->debug("Aborting download ...");
+    $self->reset_config( $options{fallback_status} );
+
+    $fn and -e $fn and unlink($fn);
+
+    $options{errmsg} and $self->log->error( $options{errmsg} );
 }
 
 sub download_chunk
@@ -209,16 +215,17 @@ sub download_chunk
     $data or return $self->finish_download;
 
     my $fh;
-    open( $fh, ">>", $fn ) or return $self->abort_download( $fn, "Cannot open $fn for appending: $!" );
+    open( $fh, ">>", $fn ) or return $self->abort_download( errmsg => "Cannot open $fn for appending: $!" );
 
-    syswrite( $fh, $data, length($data) ) or return $self->abort_download( $fn, "Cannot append to $fn: $!" );
-    close($fh) or return $self->abort_download( $fn, "Error closing $fn: $!" );
+    syswrite( $fh, $data, length($data) ) or return $self->abort_download( errmsg => "Cannot append to $fn: $!" );
+    close($fh) or return $self->abort_download( errmsg => "Error closing $fn: $!" );
 }
 
 sub finish_download
 {
     my $self = shift;
     $self->log->debug("Starting finish_download ...");
+    $download_response_future = undef;
     $self->wakeup_in( 1, "prove" );
 }
 
