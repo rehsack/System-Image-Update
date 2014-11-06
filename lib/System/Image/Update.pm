@@ -125,8 +125,9 @@ routine being called to start fresh
 
 sub reset_config
 {
-    my $self = shift;
-    $self->status("scan");
+    my ( $self, $status ) = @_;
+    $status or $self->schedule_scan;
+    $status and $self->wakeup_in( 1, $status );
 }
 
 =head2 save_config
