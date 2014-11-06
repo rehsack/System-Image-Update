@@ -107,6 +107,14 @@ sub scan
     );
 }
 
+sub schedule_scan
+{
+    my $self = shift;
+    $scan_timer and return;
+    $self->status("scan");
+    $scan_timer = $self->wakeup_in( $self->scan_interval, "scan" );
+}
+
 sub extra_scan { shift->scan(1); }
 
 sub scan_before
@@ -123,7 +131,7 @@ sub check_newer_manifest
     if ( $response->code != 200 )
     {
         $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . status_message( $response->code ) );
-        goto done;
+        return $self->schedule_scan;
     }
 
     my $manifest_mtime = -f $self->update_manifest ? stat( $self->update_manifest )->ctime : 0;
@@ -141,9 +149,7 @@ sub check_newer_manifest
         );
     }
 
-  done:
-    $scan_timer or $scan_timer = $self->wakeup_in( $self->scan_interval, "scan" );
-    return;
+    $self->schedule_scan;
 }
 
 sub analyse_newer_manifest
@@ -152,7 +158,7 @@ sub analyse_newer_manifest
     if ( $response->code != 200 )
     {
         $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . status_message( $response->code ) );
-        return;
+        return $self->schedule_scan;
     }
 
     make_path( dirname( $self->update_manifest ) );
