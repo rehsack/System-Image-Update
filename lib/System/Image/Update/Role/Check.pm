@@ -111,10 +111,10 @@ sub check
     $recent_update and $self->recent_update(
         {
             %{ $manifest->{$recent_update} },
-            release_ts => $recent_update,
+            ( defined $manifest->{$recent_update}->{release_ts} ? () : ( release_ts => $recent_update ) )
         }
     );
-    $recent_update or $self->clear_recent_update;
+    $recent_update or $self->reset_config;
 
     $recent_update;
 }
