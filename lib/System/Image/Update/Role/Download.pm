@@ -33,13 +33,13 @@ sub _trigger_recent_update
 {
     my ( $self, $new_val ) = @_;
     $self->has_loop or return;
+    $self->log->debug("Trigger prove for automatic download");
     exists $new_val->{estimated_dl_ts} or $self->determine_estimated_dl_ts($new_val);
     $self->wakeup_in( 1, "save_config" );
     my $now = DateTime->now->epoch;
-    $new_val->{estimated_dl_ts} > $now
-      and $self->wakeup_at( $new_val->{estimated_dl_ts}, "download" )
-      and $self->scan_before( $new_val->{estimated_dl_ts} - 60 );
-    $new_val->{estimated_dl_ts} <= $now and $self->wakeup_in( 1, "download" );
+    my $wait = $self->recent_update->{estimated_dl_ts} - 60 > $now ? $self->recent_update->{estimated_dl_ts} - $now : 1;
+    $wait > 1 and $self->scan_before( $wait - 60 ) and $self->wakeup_in( $wait - 3, "check" );
+    $self->wakeup_in( $wait, "download" );
 }
 
 my $default_download_file = -x "/imx6/xbmc/bin/xbmc" ? "hp2+xbmc" : "hp2";
@@ -115,21 +115,20 @@ sub determine_estimated_dl_ts
         on_error => sub { $self->log->error( $_[1] ); 1 }
     );
     looks_like_number( $new_val->{release_ts} )
-      or $new_val->{release_ts} = $strp->parse_datetime( $new_val->{release_ts} )->epoch;
-    my $release_ts = $new_val->{release_ts};
+      or $new_val->{release_ts} = eval { $strp->parse_datetime( $new_val->{release_ts} )->epoch; } // DateTime->now->epoch;
     if ( $new_val->{apply} )
     {
-        looks_like_number( $new_val->{apply} ) or $new_val->{apply} = $strp->parse_datetime( $new_val->{apply} )->epoch;
+        looks_like_number( $new_val->{apply} ) or $new_val->{apply} = eval { $strp->parse_datetime( $new_val->{apply} )->epoch; };
 
-        my $apply_ts      = $new_val->{apply};
-        my $delta_seconds = $apply_ts - $release_ts;
-        $delta_seconds > 0 and $new_val->{estimated_dl_ts} = $release_ts + int( $delta_seconds / ( ( rand 20 ) + 21 ) );
+        my $delta_seconds = $new_val->{apply} - $new_val->{release_ts};
+        $delta_seconds > 0
+          and $new_val->{estimated_dl_ts} = $new_val->{release_ts} + int( $delta_seconds / ( ( rand 20 ) + 21 ) );
         $new_val->{estimated_dl_ts} //= 1;
     }
     else
     {
         $new_val->{estimated_dl_ts} =
-          $release_ts + rand( $self->max_download_wait - $self->min_download_wait ) + $self->max_download_wait + 1;
+          $new_val->{release_ts} + rand( $self->max_download_wait - $self->min_download_wait ) + $self->max_download_wait + 1;
     }
 }
 
@@ -173,9 +172,18 @@ sub download
         user      => $self->http_user,
         pass      => $self->http_passwd,
         on_header => sub {
+            my ($response) = @_;
+            if ( $response->code != 200 )
+            {
+                $self->log->error( "Error fetching " . $u->as_string . ": " . status_message( $response->code ) );
+                $self->reset_config;
+                return;
+            }
+            $self->log->debug("Receiving data");
             return sub { $self->download_chunk( $save_fn, @_ ) }
         }
     );
+    $self->log->debug( "Download future for " . $u->as_string . " started" );
 }
 
 around reset_config => sub {

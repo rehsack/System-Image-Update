@@ -121,8 +121,7 @@ sub scan_before
 {
     my ( $self, $ts ) = @_;
 
-    my $now = DateTime->now->epoch;
-    $ts > $now and $self->wakeup_at( $ts, "extra_scan" );
+    $self->wakeup_in( $ts, "extra_scan" );
 }
 
 sub check_newer_manifest

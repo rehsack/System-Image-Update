@@ -106,7 +106,7 @@ sub check
               $self->_cmp_versions( $provided_version, $installed_version )
           and $recent_update = $avail_update
           and $recent_ver    = $provided_version
-          and $self->log->debug("Applying $avail_update because $provided_version is more recent than $installed_version");
+          and $self->log->debug("Choosing $avail_update because $provided_version is more recent than $installed_version");
     }
     $recent_update and $self->recent_update(
         {

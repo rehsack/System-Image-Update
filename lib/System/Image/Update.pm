@@ -71,10 +71,11 @@ or from outside:
 =cut
 
 has status => (
-    is      => "rw",
-    lazy    => 1,
-    builder => 1,
-    isa     => sub { __PACKAGE__->can( $_[0] ) or die "Invalid status: $_[0]" }
+    is        => "rw",
+    lazy      => 1,
+    builder   => 1,
+    predicate => 1,
+    isa       => sub { __PACKAGE__->can( $_[0] ) or die "Invalid status: $_[0]" }
 );
 
 sub _build_status
@@ -87,6 +88,23 @@ sub _build_status
 
     return $status;
 }
+
+around BUILDARGS => sub {
+    my $next   = shift;
+    my $class  = shift;
+    my $params = $class->$next(@_);
+
+    $params->{status}
+      and $params->{status} eq "apply"
+      and $params->{status} = "prove";
+
+          $params->{status}
+      and $params->{status} eq "prove"
+      and $params->{recent_update}
+      and $params->{recent_update}->{apply} = DateTime->now->epoch;
+
+    $params;
+};
 
 =head1 METHODS
 
