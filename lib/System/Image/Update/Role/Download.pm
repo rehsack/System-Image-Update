@@ -181,7 +181,8 @@ sub download
             }
             $self->log->debug("Receiving data");
             return sub { $self->download_chunk( $save_fn, @_ ) }
-        }
+        },
+	stall_timeout => 60 * 5,
     );
     $self->log->debug( "Download future for " . $u->as_string . " started" );
 }
