@@ -118,7 +118,8 @@ sub run
 {
     my $self = shift;
     my $cb   = $self->status;
-    $self->wakeup_in( 1, $cb );
+    $self->wakeup_in( 1,  "extra_scan" );
+    $self->wakeup_in( 10, $cb );
     $self->loop->run;
 }
 

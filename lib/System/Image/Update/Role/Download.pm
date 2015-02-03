@@ -183,6 +183,7 @@ sub download
                 return sub { $_[0] and $self->log->debug("Discarding received garbage") };
             }
             $self->log->debug("Receiving data");
+            $self->wakeup_in( 1, "save_config" );
             return sub { $self->download_chunk( $save_fn, @_ ) }
         },
         on_error => sub {

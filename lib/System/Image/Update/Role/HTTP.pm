@@ -68,7 +68,7 @@ sub do_http_request
         host        => $req_params{uri}->host,
         service     => "http",
         protocol    => $self->http_proto,
-	timeout     => 60,
+        timeout     => 60,
         on_resolved => sub {
             # XXX develop way to retry when @_ > 1
             my $addr = shift;
