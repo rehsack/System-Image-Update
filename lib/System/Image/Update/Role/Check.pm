@@ -108,7 +108,7 @@ sub check
     {
         my $provided_version = eval { version->new($avail_update); };
         $@ and $provided_version = $self->_build_fake_ver($avail_update);
-        defined $recent_ver and $self->log->debug("Proving whether $provided_version is newer than chosen $avail_update");
+        defined $recent_ver and $self->log->debug("Proving whether $provided_version is newer than chosen $recent_ver");
         defined $recent_ver and $recent_ver >= $provided_version and next;
         $self->log->debug("Proving whether $provided_version is newer than installed $installed_version");
               $self->_cmp_versions( $provided_version, $installed_version )
