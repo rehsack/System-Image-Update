@@ -45,6 +45,57 @@ sub _build_http_passwd
     $http_passwd_built;
 }
 
+has http_proto => (
+    is  => "lazy",
+    isa => sub { die "Invalid protocol for http" unless defined $_[0] and $_[0] > 0 }
+);
+
+sub _build_http_proto
+{
+    my $self = shift;
+    my @tcp  = getprotobyname("tcp");
+    $tcp[$#tcp];
+}
+
+sub do_http_request
+{
+    my ( $self, %req_params ) = @_;
+
+    my $loop = $self->loop;
+    my %on_error = ( defined $req_params{on_error} ? ( on_error => $req_params{on_error} ) : () );
+
+    $loop->resolver->getaddrinfo(
+        host        => $req_params{uri}->host,
+        service     => "http",
+        protocol    => $self->http_proto,
+	timeout     => 60,
+        on_resolved => sub {
+            # XXX develop way to retry when @_ > 1
+            my $addr = shift;
+            $loop->resolver->getnameinfo(
+                addr        => $addr->{addr},
+                numeric     => 1,
+                on_resolved => sub {
+                    my ( $host, $service ) = @_;
+
+                    my $req = HTTP::Request->new( delete $req_params{method}, delete $req_params{uri} );
+                    $req->authorization_basic( $self->http_user, $self->http_passwd );
+
+                    my $http = $self->http;
+                    my ($response) = $http->do_request(
+                        fail_on_error => 1,
+                        request       => $req,
+                        host          => $host,
+                        %req_params
+                    );
+                },
+                %on_error
+            );
+        },
+        %on_error
+    );
+}
+
 around collect_savable_config => sub {
     my $next                   = shift;
     my $self                   = shift;

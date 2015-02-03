@@ -17,7 +17,7 @@ with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging
 use Carp qw/confess/;
 use File::Basename qw();
 use File::Spec qw();
-
+use HTTP::Status qw(status_message);
 use Scalar::Util qw(looks_like_number);
 
 our $VERSION = "0.001";
@@ -152,11 +152,14 @@ sub download
     $download_response_future and return;
     $self->has_recent_update or return;
     $self->status("download");
-    my $http = $self->http;
 
     my $save_fn = $self->download_image;
     # XXX skip download when image is already there and valid
-    -f $save_fn and $self->prove and return;
+    if ( -f $save_fn )
+    {
+        $self->prove;
+        return;
+    }
 
     # XXX add Content-Range as in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.16
     #     and truncate file in that case ...
@@ -166,24 +169,29 @@ sub download
     $u->scheme("http");
     $u->host( $self->update_server );
     $u->path( File::Spec->catfile( $self->update_path, $self->download_basename ) );
-    ($download_response_future) = $http->do_request(
-        uri       => $u,
-        method    => "GET",
-        user      => $self->http_user,
-        pass      => $self->http_passwd,
-        on_header => sub {
+
+    ($download_response_future) = $self->do_http_request(
+        uri           => $u,
+        method        => "GET",
+        stall_timeout => 60 * 5,
+        on_header     => sub {
             my ($response) = @_;
             if ( $response->code != 200 )
             {
                 $self->log->error( "Error fetching " . $u->as_string . ": " . status_message( $response->code ) );
                 $self->reset_config;
-                return;
+                return sub { $_[0] and $self->log->debug("Discarding received garbage") };
             }
             $self->log->debug("Receiving data");
             return sub { $self->download_chunk( $save_fn, @_ ) }
         },
-	stall_timeout => 60 * 5,
+        on_error => sub {
+            my $message = shift;
+            $self->log->error( "Error fetching " . $u->as_string . ": " . $message );
+            $self->reset_config;
+        },
     );
+
     $self->log->debug( "Download future for " . $u->as_string . " started" );
 }
 

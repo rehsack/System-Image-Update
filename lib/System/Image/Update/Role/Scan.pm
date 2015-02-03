@@ -17,6 +17,7 @@ use File::Path qw(make_path);
 use File::Slurp::Tiny qw(write_file);
 use File::Spec;
 use File::stat;
+use HTTP::Status qw(status_message);
 use URI;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
@@ -91,19 +92,23 @@ around collect_savable_config => sub {
 
 my $scan_timer;
 
+sub scan_error
+{
+    my ( $self, $message ) = @_;
+    $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . $message );
+    $self->reset_config;
+}
+
 sub scan
 {
     my ( $self, $extra_scan ) = @_;
     $self->log->debug("Starting scan ...");
-    my $http = $self->http;
     $extra_scan or $scan_timer = undef;
-
-    my ($response) = $http->do_request(
+    $self->do_http_request(
         uri         => URI->new( $self->update_manifest_uri ),
         method      => "HEAD",
-        user        => $self->http_user,
-        pass        => $self->http_passwd,
-        on_response => sub { $self->check_newer_manifest(@_) }
+        on_response => sub { $self->check_newer_manifest(@_) },
+        on_error    => sub { $self->scan_error(@_); },
     );
 }
 
@@ -127,26 +132,17 @@ sub scan_before
 sub check_newer_manifest
 {
     my ( $self, $response ) = @_;
-    if ( $response->code != 200 )
-    {
-        $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . status_message( $response->code ) );
-        return $self->schedule_scan;
-    }
+    $response->code == 200 or return $self->scan_error( status_message( $response->code ) );
 
     my $manifest_mtime = -f $self->update_manifest ? stat( $self->update_manifest )->ctime : 0;
     my $manifest_last_modified = $response->last_modified || -1;
 
-    if ( $manifest_mtime < $manifest_last_modified )
-    {
-        my $http = $self->http;
-        my ($response) = $http->do_request(
-            uri         => URI->new( $self->update_manifest_uri ),
-            method      => "GET",
-            user        => $self->http_user,
-            pass        => $self->http_passwd,
-            on_response => sub { $self->analyse_newer_manifest(@_) }
-        );
-    }
+    $manifest_mtime < $manifest_last_modified and $self->do_http_request(
+        uri         => URI->new( $self->update_manifest_uri ),
+        method      => "GET",
+        on_response => sub { $self->analyse_newer_manifest(@_) },
+        on_error    => sub { $self->scan_error(@_); },
+    );
 
     $self->schedule_scan;
 }
@@ -154,11 +150,7 @@ sub check_newer_manifest
 sub analyse_newer_manifest
 {
     my ( $self, $response ) = @_;
-    if ( $response->code != 200 )
-    {
-        $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . status_message( $response->code ) );
-        return $self->schedule_scan;
-    }
+    $response->code == 200 or return $self->scan_error( status_message( $response->code ) );
 
     make_path( dirname( $self->update_manifest ) );
     write_file( $self->update_manifest, $response->content );
