@@ -157,7 +157,7 @@ sub download
     # XXX skip download when image is already there and valid
     if ( -f $save_fn )
     {
-        $self->prove;
+        $self->wakeup_in( 1, "prove" );
         return;
     }
 
