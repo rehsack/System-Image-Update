@@ -13,15 +13,22 @@ System::Image::Update::Role::Check - provides role for checking for updates
 use Moo::Role;
 
 use DateTime::Format::Strptime qw();
-use File::LibMagic qw();
 use File::Slurp::Tiny qw(read_file);
+use Module::Runtime qw(require_module);
 use Scalar::Util qw/blessed/;
 use version;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
 
-my @month_names = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
-my %month_by_name = map { $month_names[$_] => $_ + 1 } ( 0 .. $#month_names );
+has month_by_name => ( is => "lazy" );
+
+sub _build_month_by_name
+{
+    my @month_names = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+    {
+        map { $month_names[$_] => $_ + 1 } ( 0 .. $#month_names )
+    }
+}
 
 has _depreciated_scanner => ( is => "lazy" );
 
@@ -56,6 +63,7 @@ sub _build_installed_version
     -f $self->installed_version_file
       and return version->new( ( split( "-", read_file( $self->installed_version_file, chomp => 1 ) ) )[0] );
 
+    require_module("File::LibMagic");
     my $kident = File::LibMagic->new()->describe_filename("/boot/uImage");
     $kident =~
       m,(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+),
@@ -63,7 +71,7 @@ sub _build_installed_version
     my ( $wday, $mon, $day, $hour, $minute, $second, $year, $kmatch ) = ( $1, $2, $3, $4, $5, $6, $7, $& );
     my $kdate = DateTime->new(
         year   => $year,
-        month  => $month_by_name{$mon},
+        month  => $self->month_by_name->{$mon},
         day    => $day,
         hour   => $hour,
         minute => $minute,

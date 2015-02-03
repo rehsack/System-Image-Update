@@ -13,7 +13,6 @@ my %RUN_DEPS = (
     'File::Basename'             => 0,
     'File::Copy'                 => 0,
     'File::Path'                 => 0,
-    'File::LibMagic'             => 0,
     'File::Slurp::Tiny'          => 0,
     'File::Spec'                 => 0,
     'Module::Runtime'            => 0,
@@ -69,6 +68,7 @@ WriteMakefile1(
                     'Digest::SHA3'                => 0,
                     'Digest::MD5'                 => 0,
                     'Digest::MD6'                 => 0,
+                    'File::LibMagic'             => 0,
                     'Log::Dispatch'               => 0,
                     'Log::Any::Adapter::Dispatch' => 0,
                 },
@@ -144,3 +144,5 @@ sub WriteMakefile1
 
     WriteMakefile(%params);
 }
+
+1;
