@@ -19,15 +19,31 @@ with "MooX::Log::Any";
 our $VERSION = "0.001";
 
 has log_adapter => (
-    is       => "ro",
-    required => 1,
-    trigger  => 1
+    is        => "ro",
+    required  => 1,
+    trigger   => 1,
+    predicate => 1,
 );
 
 sub _trigger_log_adapter
 {
     my ( $self, $opts ) = @_;
     load_class("Log::Any::Adapter")->set( @{$opts} );
+}
+
+has errorlog_filename => ( is => "lazy" );
+
+sub _build_errorlog_filename
+{
+    my $self = shift;
+    $self->has_log_adapter or return;
+    my @opts = @{ $self->log_adapter };
+    return unless $opts[2] and "ARRAY" eq ref $opts[2];
+    my @err = grep {
+        my ( $t, %o ) = @{$_};
+        $t eq "File" and defined $o{min_level} and $o{min_level} eq "error" and defined $o{filename}
+    } @{ $opts[2] };
+    ( map { my ( $t, %o ) = @{$_}; $o{filename} } @err )[0];
 }
 
 =head1 AUTHOR
