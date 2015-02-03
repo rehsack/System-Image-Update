@@ -78,6 +78,7 @@ sub do_http_request
                 on_resolved => sub {
                     my ( $host, $service ) = @_;
 
+                    $self->log->debug( $req_params{method} . " " . $req_params{uri}->as_string );
                     my $req = HTTP::Request->new( delete $req_params{method}, delete $req_params{uri} );
                     $req->authorization_basic( $self->http_user, $self->http_passwd );
 
