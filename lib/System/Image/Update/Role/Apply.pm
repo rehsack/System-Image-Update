@@ -81,6 +81,7 @@ sub _apply4real
     $self->reset_config;
     $self->save_config;
 
+    # XXX svc -t (hp2sm) will abort flash!
     system( $self->flash_command ) or return $self->log->error("Cannot send execute flash command: $!");
 }
 
