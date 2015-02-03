@@ -145,6 +145,7 @@ sub reset_config
 {
     my ( $self, $status ) = @_;
     $status or $self->schedule_scan;
+    $self->wakeup_in( 1, "save_config" );
     $status and $self->wakeup_in( 1, $status );
 }
 
