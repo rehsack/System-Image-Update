@@ -118,7 +118,8 @@ sub run
 {
     my $self = shift;
     my $cb   = $self->status;
-    $self->wakeup_in( 1,  "extra_scan" );
+    # that starts the regular scan interval
+    $cb ne "scan" and $self->wakeup_in( 1, "scan" );
     $self->wakeup_in( 10, $cb );
     $self->loop->run;
 }
