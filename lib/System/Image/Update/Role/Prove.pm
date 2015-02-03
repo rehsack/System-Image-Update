@@ -108,6 +108,7 @@ sub prove
       and return $self->abort_download( fallback_status => "check" );
 
     $self->status("prove");
+    $self->wakeup_in( 1, "save_config" );
 
     foreach my $chksum ( keys %$save_chksum )
     {
