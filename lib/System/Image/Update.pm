@@ -10,7 +10,9 @@ use Moo;
 use MooX::Options with_config_from_file => 1;
 use IO::Async ();
 use JSON      ();
+use File::Basename qw(basename);
 use File::Slurp::Tiny qw(write_file);
+use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging",
   "System::Image::Update::Role::Scan",     "System::Image::Update::Role::Check",
@@ -151,6 +153,16 @@ sub reset_config
     $status and $self->wakeup_in( 1, $status );
 }
 
+has savable_configfile => ( is => "lazy" );
+
+sub _build_savable_configfile
+{
+    my $self = $_[0];
+    my ($scfd) = system_image_update_dir;
+    defined $scfd and -d $scfd and return File::Spec->catfile( $scfd, basename( $self->config_files->[0] ) );
+    $self->config_files->[0];
+}
+
 =head2 save_config
 
 Saves result of L</collect_savable_config> in first file got via
@@ -163,7 +175,7 @@ sub save_config
     my $self           = shift;
     my $savable_config = $self->collect_savable_config;
     my $savable_text   = JSON->new->pretty->allow_nonref->encode($savable_config);
-    my $target         = $self->config_files->[0];
+    my $target         = $self->savable_configfile;
     write_file( $target, $savable_text );    # XXX prove utf8 stuff
 }
 
