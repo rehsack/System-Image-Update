@@ -119,7 +119,7 @@ sub check
     $recent_update and $self->recent_update(
         {
             %{ $manifest->{$recent_update} },
-            ( defined $manifest->{$recent_update}->{release_ts} ? () : ( release_ts => $recent_update ) )
+            ( defined $manifest->{$recent_update}->{release_ts} ? () : ( release_ts => DateTime->now->epoch ) )
         }
     );
     $recent_update or $self->reset_config;
