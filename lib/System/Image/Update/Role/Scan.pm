@@ -47,7 +47,7 @@ has update_manifest_basename => (
     default => $default_update_manifest_basename,
 );
 
-my $default_update_manifest_dirname = "/data/.update/";
+my $default_update_manifest_dirname = $ENV{SYSTEM_IMAGE_UPDATE_DIR} // "/data/.update/";
 has update_manifest_dirname => (
     is      => "ro",
     default => $default_update_manifest_dirname,

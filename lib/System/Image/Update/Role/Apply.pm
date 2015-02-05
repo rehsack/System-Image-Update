@@ -29,7 +29,7 @@ contains the location where the images for updating are located
 
 has image_location => (
     is      => "ro",
-    default => "/data/.flashimg"
+    default => $ENV{SYSTEM_IMAGE_UPDATE_FLASH_DIR} // "/data/.flashimg"
 );
 
 =head2 flash_command
