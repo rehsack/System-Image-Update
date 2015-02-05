@@ -31,6 +31,14 @@ sub _trigger_log_adapter
     load_class("Log::Any::Adapter")->set( @{$opts} );
 }
 
+around collect_savable_config => sub {
+    my $next                   = shift;
+    my $self                   = shift;
+    my $collect_savable_config = $self->$next(@_);
+    $collect_savable_config->{log_adapter} = $self->log_adapter;
+    $collect_savable_config;
+};
+
 has errorlog_filename => ( is => "lazy" );
 
 sub _build_errorlog_filename

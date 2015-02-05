@@ -30,14 +30,6 @@ sub _build_loop
     return IO::Async::Loop->new();
 }
 
-around collect_savable_config => sub {
-    my $next                   = shift;
-    my $self                   = shift;
-    my $collect_savable_config = $self->$next(@_);
-    $collect_savable_config->{log_adapter} = $self->log_adapter;
-    $collect_savable_config;
-};
-
 sub wakeup_at
 {
     my ( $self, $when, $cb_method ) = @_;
