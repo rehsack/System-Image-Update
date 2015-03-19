@@ -10,13 +10,13 @@ System::Image::Update::Role::Logging - logging role
 
 =cut
 
-use Moo::Role;
+our $VERSION = "0.001";
 
 use Class::Load qw(load_class);
 
-with "MooX::Log::Any";
+use Moo::Role;
 
-our $VERSION = "0.001";
+with "MooX::Log::Any";
 
 has log_adapter => (
     is        => "ro",

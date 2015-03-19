@@ -10,9 +10,7 @@ System::Image::Update::Role::Download - role for downloading most recent update
 
 =cut
 
-use Moo::Role;
-
-with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
+our $VERSION = "0.001";
 
 use Carp qw/confess/;
 use File::Basename qw();
@@ -20,7 +18,9 @@ use File::Spec qw();
 use HTTP::Status qw(status_message);
 use Scalar::Util qw(looks_like_number);
 
-our $VERSION = "0.001";
+use Moo::Role;
+
+with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
 has recent_update => (
     is        => "rw",

@@ -10,14 +10,14 @@ System::Image::Update::Role::Apply - provides the role for applying approved ima
 
 =cut
 
-use Moo::Role;
+our $VERSION = "0.001";
 
 use File::Copy qw(move);
 use File::Path qw(make_path);
 
-with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
+use Moo::Role;
 
-our $VERSION = "0.001";
+with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
 =head1 ATTRIBUTES
 

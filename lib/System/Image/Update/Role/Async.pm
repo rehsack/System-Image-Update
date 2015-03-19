@@ -10,7 +10,7 @@ System::Image::Update::Role::Async - provides role for asynchronous tasks
 
 =cut
 
-use Moo::Role;
+our $VERSION = "0.001";
 
 use IO::Async;
 use IO::Async::Loop;
@@ -18,7 +18,7 @@ use IO::Async::Loop;
 use IO::Async::Timer::Absolute;
 use IO::Async::Timer::Countdown;
 
-our $VERSION = "0.001";
+use Moo::Role;
 
 has loop => (
     is        => "lazy",

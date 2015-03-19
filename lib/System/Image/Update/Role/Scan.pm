@@ -10,8 +10,6 @@ System::Image::Update::Role::Scan - role to scan for new updates
 
 =cut
 
-use Moo::Role;
-
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
 use File::Slurp::Tiny qw(write_file);
@@ -19,6 +17,8 @@ use File::Spec;
 use File::stat;
 use HTTP::Status qw(status_message);
 use URI;
+
+use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
 

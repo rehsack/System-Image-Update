@@ -10,13 +10,15 @@ System::Image::Update::Role::Check - provides role for checking for updates
 
 =cut
 
-use Moo::Role;
+our $VERSION = "0.001";
 
 use DateTime::Format::Strptime qw();
 use File::Slurp::Tiny qw(read_file);
 use Module::Runtime qw(require_module);
 use Scalar::Util qw/blessed/;
 use version;
+
+use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::HTTP";
 

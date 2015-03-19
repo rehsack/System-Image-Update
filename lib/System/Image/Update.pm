@@ -6,13 +6,16 @@ use warnings FATAL => 'all';
 
 our $VERSION = "0.001";
 
-use Moo;
-use MooX::Options with_config_from_file => 1;
 use IO::Async ();
 use JSON      ();
 use File::Basename qw(basename);
 use File::Slurp::Tiny qw(write_file);
+use File::ConfigDir ();
 use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
+use namespace::clean;
+
+use Moo;
+use MooX::Options with_config_from_file => 1;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging",
   "System::Image::Update::Role::Scan",     "System::Image::Update::Role::Check",

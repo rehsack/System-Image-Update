@@ -10,14 +10,15 @@ System::Image::Update::Role::HTTP - role managing http tasks
 
 =cut
 
-use Moo::Role;
+our $VERSION = "0.001";
+
 use Net::Async::HTTP;
 use URI;
 use HTTP::Status qw(status_message);
 
-with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
+use Moo::Role;
 
-our $VERSION = "0.001";
+with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
 has http => ( is => "lazy" );
 

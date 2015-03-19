@@ -10,10 +10,10 @@ System::Image::Update::Role::Prove - provides role proving downloaded images
 
 =cut
 
-use Moo::Role;
-
 use File::stat;
 use Module::Runtime qw(require_module);
+
+use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
