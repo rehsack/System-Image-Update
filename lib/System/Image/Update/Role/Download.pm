@@ -20,7 +20,7 @@ use Scalar::Util qw(looks_like_number);
 
 use Moo::Role;
 
-with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
+with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging", "System::Image::Update::Role::Images";
 
 has recent_update => (
     is        => "rw",
@@ -42,13 +42,13 @@ sub _trigger_recent_update
     $self->wakeup_in( $wait, "download" );
 }
 
-my $default_download_file = -x "/imx6/xbmc/bin/xbmc" ? "hp2+xbmc" : "hp2";
 has download_file => (
-    is      => "ro",
-    default => $default_download_file,
+    is => "lazy",
 );
 
-sub _is_default_download_file { $_[0]->download_file eq $default_download_file }
+sub _build_download_file { $_[0]->installed_image }
+
+sub _is_default_download_file { $_[0]->download_file eq $_[0]->installed_image }
 
 has min_download_wait => (
     is      => "ro",
@@ -137,8 +137,8 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    $self->has_recent_update                       and $collect_savable_config->{recent_update} = $self->recent_update;
-    $self->download_file ne $default_download_file and $collect_savable_config->{download_file} = $self->download_file;
+    $self->has_recent_update and $collect_savable_config->{recent_update} = $self->recent_update;
+    $self->_is_default_download_file or $collect_savable_config->{download_file} = $self->download_file;
 
     $collect_savable_config;
 };
