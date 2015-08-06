@@ -42,13 +42,17 @@ sub _trigger_recent_update
     $self->wakeup_in( $wait, "download" );
 }
 
+has download_file_prefix => (
+    is => "lazy",
+);
+
+sub _build_download_file_prefix { "" }
+
 has download_file => (
     is => "lazy",
 );
 
-sub _build_download_file { $_[0]->installed_image }
-
-sub _is_default_download_file { $_[0]->download_file eq $_[0]->installed_image }
+sub _build_download_file { $_[0]->download_file_prefix . $_[0]->installed_image }
 
 has min_download_wait => (
     is      => "ro",
@@ -87,6 +91,7 @@ sub _build_download_image
     $self->has_recent_update or confess "No downloadable image without a recent update";
     my $save_fn = $self->recent_update->{ $self->download_file };
     $save_fn = ( split ";", $save_fn )[0];
+    $save_fn = File::Basename::basename( $save_fn );
     $save_fn = File::Spec->catfile( $self->download_dir, $save_fn );
     $save_fn;
 }
