@@ -88,10 +88,7 @@ sub _build_installed_version
 sub _cmp_versions
 {
     my ( $self, $provided_version, $installed_version ) = @_;
-    my $iddf = $self->can("_is_default_download_file");
-    $iddf or return $provided_version > $installed_version;
-    $iddf->($self) and return $provided_version > $installed_version;
-    $provided_version >= $installed_version;
+    $self->wanted_image eq $self->installed_image ? $provided_version > $installed_version : $provided_version >= $installed_version;
 }
 
 sub check

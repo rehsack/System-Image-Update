@@ -77,6 +77,20 @@ sub _build_installed_image
     join( $self->record_installed_components_image_separator, @img_comps );
 }
 
+has wanted_image => ( is => "lazy" );
+
+sub _build_wanted_image { $_[0]->installed_image }
+
+around collect_savable_config => sub {
+    my $next                   = shift;
+    my $self                   = shift;
+    my $collect_savable_config = $self->$next(@_);
+
+    $self->wanted_image ne $self->installed_image and $collect_savable_config->{wanted_image} = $self->wanted_image;
+
+    $collect_savable_config;
+};
+
 =head1 METHODS
 
 =head1 AUTHOR

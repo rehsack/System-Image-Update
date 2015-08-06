@@ -52,7 +52,7 @@ has download_file => (
     is => "lazy",
 );
 
-sub _build_download_file { $_[0]->download_file_prefix . $_[0]->installed_image }
+sub _build_download_file { $_[0]->download_file_prefix . $_[0]->wanted_image }
 
 has min_download_wait => (
     is      => "ro",
@@ -143,7 +143,6 @@ around collect_savable_config => sub {
     my $collect_savable_config = $self->$next(@_);
 
     $self->has_recent_update and $collect_savable_config->{recent_update} = $self->recent_update;
-    $self->_is_default_download_file or $collect_savable_config->{download_file} = $self->download_file;
 
     $collect_savable_config;
 };
