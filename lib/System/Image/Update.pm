@@ -17,6 +17,8 @@ use namespace::clean;
 use Moo;
 use MooX::Options with_config_from_file => 1;
 
+with "MooX::ConfigFromFile::Role::HashMergeLoaded";
+
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging",
   "System::Image::Update::Role::Scan",     "System::Image::Update::Role::Check",
   "System::Image::Update::Role::Download", "System::Image::Update::Role::Prove",
