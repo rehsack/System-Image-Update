@@ -1,4 +1,4 @@
-package System::Image::Update::Role::Check;
+package System::Image::Update::Role::Manifest;
 
 use 5.014;
 use strict;
@@ -6,40 +6,70 @@ use warnings FATAL => 'all';
 
 =head1 NAME
 
-System::Image::Update::Role::Check - provides role for checking for updates
+System::Image::Update::Role::Manifest - provides role for handling manifest
 
 =cut
 
 our $VERSION = "0.001";
 
+use File::Slurp::Tiny qw(read_file);
+use JSON qw();
+use version ();
+
 use Moo::Role;
 
-with "System::Image::Update::Role::Logging", "System::Image::Update::Role::Manifest", "System::Image::Update::Role::Versions";
+with "System::Image::Update::Role::Logging", "System::Image::Update::Role::Versions";
 
-sub _cmp_versions
+has manifest => (
+    is      => "lazy",
+    clearer => 1,
+    trigger => 1,
+);
+
+sub _build_manifest
 {
-    my ( $self, $provided_version, $installed_version ) = @_;
-    $self->wanted_image eq $self->installed_image
-      ? $provided_version > $installed_version
-      : $provided_version >= $installed_version;
+    $_[0]->clear_recent_manifest_entry;
+    $_[0]->clear_available_images;
+
+    my $mfcnt = read_file( $_[0]->update_manifest );
+    JSON->new->decode($mfcnt);
 }
 
-sub check
+sub _trigger_manifest
+{
+    $_[0]->clear_recent_manifest_entry;
+    $_[0]->clear_available_images;
+}
+
+has recent_manifest_entry => (
+    is      => "lazy",
+    clearer => 1,
+    trigger => 1,
+);
+
+sub _build_recent_manifest_entry
 {
     my $self = shift;
 
-    my $installed_version = $self->installed_version;
+    my ( $recent_key, $recent_ver );
+    foreach my $avail_key ( keys %{ $self->manifest } )
+    {
+        my $avail_ver = eval { version->new($avail_key); };
+        $@ and $avail_ver = $self->_build_fake_ver($avail_key);
+        defined $recent_ver
+          and $self->log->debug("Proving whether '$avail_ver' is more recent than currently chosen '$recent_ver'");
+        defined $recent_ver and $recent_ver >= $avail_ver and next;
+        defined $recent_ver and $self->log->debug("'$avail_ver' is more recent than '$recent_ver'");
+        $recent_key = $avail_key;
+        $recent_ver = $avail_ver;
+    }
+    $self->clear_available_images;
+    +{ $recent_key => $self->manifest->{$recent_key} };
+}
 
-    $self->status("check");
-
-    my ( $provided_version, $recent_update ) = %{ $self->recent_manifest_entry };
-    $self->log->debug("Proving whether '$provided_version' is more recent than installed '$installed_version'");
-    $self->_cmp_versions( version->new($provided_version), $installed_version ) or return $self->reset_config;
-    $self->log->debug("'$provided_version' is more recent than '$installed_version'.");
-    $self->recent_update(
-        { %{$recent_update}, ( defined $recent_update->{release_ts} ? () : ( release_ts => DateTime->now->epoch ) ) } );
-
-    $recent_update;
+sub _trigger_recent_manifest_entry
+{
+    $_[0]->clear_available_images;
 }
 
 =head1 AUTHOR

@@ -1,4 +1,4 @@
-package System::Image::Update::Role::Check;
+package System::Image::Update::Role::Versions;
 
 use 5.014;
 use strict;
@@ -6,40 +6,83 @@ use warnings FATAL => 'all';
 
 =head1 NAME
 
-System::Image::Update::Role::Check - provides role for checking for updates
+System::Image::Update::Role::Versions - provides role for playing with versions
 
 =cut
 
 our $VERSION = "0.001";
 
+use DateTime::Format::Strptime qw();
+use File::Slurp::Tiny qw(read_file);
+use Module::Runtime qw(require_module);
+use Scalar::Util qw/blessed/;
+use version ();
+
 use Moo::Role;
 
-with "System::Image::Update::Role::Logging", "System::Image::Update::Role::Manifest", "System::Image::Update::Role::Versions";
+with "System::Image::Update::Role::Logging";
 
-sub _cmp_versions
+has month_by_name => ( is => "lazy" );
+
+sub _build_month_by_name
 {
-    my ( $self, $provided_version, $installed_version ) = @_;
-    $self->wanted_image eq $self->installed_image
-      ? $provided_version > $installed_version
-      : $provided_version >= $installed_version;
+    my @month_names = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+    {
+        map { $month_names[$_] => $_ + 1 } ( 0 .. $#month_names )
+    }
 }
 
-sub check
+has _depreciated_scanner => ( is => "lazy" );
+
+sub _build__depreciated_scanner
 {
     my $self = shift;
+    DateTime::Format::Strptime->new(
+        pattern  => "%FT%T",
+        on_error => sub { $self->log->error( $_[1] ); 1 }
+    );
+}
 
-    my $installed_version = $self->installed_version;
+sub _build_fake_ver
+{
+    my ( $self, $dt ) = @_;
+    blessed $dt or $dt = $self->_depreciated_scanner->parse_datetime($dt);
+    version->new( "0.0." . $dt->epoch );
+}
 
-    $self->status("check");
+has installed_version_file => (
+    is      => "ro",
+    default => "/opt/record-installed/system-image"
+);
 
-    my ( $provided_version, $recent_update ) = %{ $self->recent_manifest_entry };
-    $self->log->debug("Proving whether '$provided_version' is more recent than installed '$installed_version'");
-    $self->_cmp_versions( version->new($provided_version), $installed_version ) or return $self->reset_config;
-    $self->log->debug("'$provided_version' is more recent than '$installed_version'.");
-    $self->recent_update(
-        { %{$recent_update}, ( defined $recent_update->{release_ts} ? () : ( release_ts => DateTime->now->epoch ) ) } );
+has installed_version => (
+    is => "lazy",
+);
 
-    $recent_update;
+sub _build_installed_version
+{
+    my $self = shift;
+    -f $self->installed_version_file
+      and return version->new( ( split( "-", read_file( $self->installed_version_file, chomp => 1 ) ) )[0] );
+
+    require_module("File::LibMagic");
+    my $kident = File::LibMagic->new()->describe_filename("/boot/uImage");
+    $kident =~
+      m,(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+),
+      or return $self->log->error("Can't extract kernel release date");
+    my ( $wday, $mon, $day, $hour, $minute, $second, $year, $kmatch ) = ( $1, $2, $3, $4, $5, $6, $7, $& );
+    my $kdate = DateTime->new(
+        year   => $year,
+        month  => $self->month_by_name->{$mon},
+        day    => $day,
+        hour   => $hour,
+        minute => $minute,
+        second => $second,
+    );
+
+    my $fake_ver = $self->_build_fake_ver($kdate);
+    $self->log->debug("Faking kernel build stamp $kmatch as version $fake_ver");
+    $fake_ver;
 }
 
 =head1 AUTHOR

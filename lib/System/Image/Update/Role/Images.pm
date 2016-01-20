@@ -77,9 +77,51 @@ sub _build_installed_image
     join( $self->record_installed_components_image_separator, @img_comps );
 }
 
-has wanted_image => ( is => "lazy" );
+has wanted_image => (
+    is      => "lazy",
+    trigger => 1
+);
 
 sub _build_wanted_image { $_[0]->installed_image }
+
+sub _trigger_wanted_image
+{
+    my ( $self, $new ) = @_;
+    my @a = @{ $self->available_images };
+    $new ~~ @a or die $self->log->error( "$new is not in available images ['" . join( "', '", @a ) . "']" );
+    $new;
+}
+
+has available_images => (
+    is      => "lazy",
+    clearer => 1
+);
+
+sub _build_available_images
+{
+    my $self = shift;
+
+    my ( undef, $recent ) = %{ $self->recent_manifest_entry };
+    my @avail;
+
+    if ( my $dl_pfx = $self->download_file_prefix )
+    {
+        my $l = length $dl_pfx;
+        @avail = map { substr $_, 0, $l, ""; $_ } grep { $dl_pfx eq substr $_, 0, $l } keys %{$recent};
+    }
+    else
+    {
+        while ( my ( $k, $v ) = each %{$recent} )
+        {
+            $v or next;
+            my ( $file, @sums ) = split( ";", $v );
+            @sums or next;
+            push @avail, $k;
+        }
+    }
+
+    [ sort @avail ];
+}
 
 around collect_savable_config => sub {
     my $next                   = shift;

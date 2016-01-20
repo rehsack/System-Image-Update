@@ -154,6 +154,9 @@ sub analyse_newer_manifest
 
     make_path( dirname( $self->update_manifest ) );
     write_file( $self->update_manifest, $response->content );
+    $self->clear_manifest;
+    $self->clear_recent_manifest_entry;
+
     $self->wakeup_in( 1, "save_config" );
     $self->wakeup_in( 1, "check" );
 }
