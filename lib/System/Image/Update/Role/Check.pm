@@ -88,7 +88,9 @@ sub _build_installed_version
 sub _cmp_versions
 {
     my ( $self, $provided_version, $installed_version ) = @_;
-    $self->wanted_image eq $self->installed_image ? $provided_version > $installed_version : $provided_version >= $installed_version;
+    $self->wanted_image eq $self->installed_image
+      ? $provided_version > $installed_version
+      : $provided_version >= $installed_version;
 }
 
 sub check

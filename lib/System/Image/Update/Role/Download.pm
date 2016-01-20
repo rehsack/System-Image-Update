@@ -91,7 +91,7 @@ sub _build_download_image
     $self->has_recent_update or confess "No downloadable image without a recent update";
     my $save_fn = $self->recent_update->{ $self->download_file };
     $save_fn = ( split ";", $save_fn )[0];
-    $save_fn = File::Basename::basename( $save_fn );
+    $save_fn = File::Basename::basename($save_fn);
     $save_fn = File::Spec->catfile( $self->download_dir, $save_fn );
     $save_fn;
 }

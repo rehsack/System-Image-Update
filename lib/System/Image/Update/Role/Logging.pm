@@ -36,7 +36,7 @@ around collect_savable_config => sub {
     my $next                   = shift;
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
-    my ($scfd) = system_image_update_dir;
+    my ($scfd)                 = system_image_update_dir;
     $collect_savable_config->{log_adapter} = $self->log_adapter unless defined $scfd and -d $scfd;
     $collect_savable_config;
 };
