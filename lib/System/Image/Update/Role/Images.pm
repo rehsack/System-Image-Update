@@ -4,8 +4,6 @@ use 5.014;
 use strict;
 use warnings FATAL => 'all';
 
-use experimental 'smartmatch';
-
 =head1 NAME
 
 System::Image::Update::Role::Images - provides the role for proving images
@@ -19,6 +17,8 @@ use IO::Dir ();
 use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
+
+use experimental 'smartmatch';
 
 =head1 ATTRIBUTES
 
