@@ -80,7 +80,7 @@ WriteMakefile1(
     AUTHOR             => q{Jens Rehsack <rehsack@cpan.org>},
     VERSION_FROM       => 'lib/System/Image/Update.pm',
     ABSTRACT_FROM      => 'lib/System/Image/Update.pm',
-    EXE_FILES          => [qw(bin/sysimg_update)],
+    EXE_FILES          => [qw(bin/sysimg-update)],
     LICENSE            => 'Artistic_2_0',
     PL_FILES           => {},
     CONFIGURE_REQUIRES => \%CONFIGURE_DEPS,
