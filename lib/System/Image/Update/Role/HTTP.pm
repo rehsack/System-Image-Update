@@ -30,7 +30,7 @@ my $http_user_built;
 
 sub _build_http_user
 {
-    my $eth0_info = qx(ip link show dev eth0);
+    my $eth0_info = qx(/sbin/ip link show dev eth0);
     ( $http_user_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "" ) =~ s/://g;
     $http_user_built;
 }
@@ -41,7 +41,7 @@ my $http_passwd_built;
 
 sub _build_http_passwd
 {
-    my $eth0_info = qx(ip link show dev eth0);
+    my $eth0_info = qx(/sbin/ip link show dev eth0);
     ( $http_passwd_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "" ) =~ s/://g;
     $http_passwd_built;
 }
