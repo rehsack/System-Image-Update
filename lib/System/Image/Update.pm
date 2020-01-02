@@ -9,7 +9,7 @@ our $VERSION = "0.001";
 use IO::Async ();
 use JSON      ();
 use File::Basename qw(basename);
-use File::Slurp::Tiny qw(write_file);
+use File::Slurper qw(write_text);
 use File::ConfigDir ();
 use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
 use namespace::clean;
@@ -181,7 +181,7 @@ sub save_config
     my $savable_config = $self->collect_savable_config;
     my $savable_text   = JSON->new->pretty->allow_nonref->encode($savable_config);
     my $target         = $self->savable_configfile;
-    write_file( $target, $savable_text );    # XXX prove utf8 stuff
+    write_text( $target, $savable_text );    # XXX prove utf8 stuff
 }
 
 =head1 AUTHOR

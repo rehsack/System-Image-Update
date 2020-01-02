@@ -12,7 +12,7 @@ System::Image::Update::Role::Manifest - provides role for handling manifest
 
 our $VERSION = "0.001";
 
-use File::Slurp::Tiny qw(read_file);
+use File::Slurper qw(read_text);
 use JSON qw();
 use version ();
 
@@ -31,7 +31,7 @@ sub _build_manifest
     $_[0]->clear_recent_manifest_entry;
     $_[0]->clear_available_images;
 
-    my $mfcnt = read_file( $_[0]->update_manifest );
+    my $mfcnt = read_text( $_[0]->update_manifest );
     JSON->new->decode($mfcnt);
 }
 

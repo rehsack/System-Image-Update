@@ -12,7 +12,7 @@ System::Image::Update::Role::Scan - role to scan for new updates
 
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
-use File::Slurp::Tiny qw(write_file);
+use File::Slurper qw(write_text);
 use File::Spec;
 use File::stat;
 use HTTP::Status qw(status_message);
@@ -153,7 +153,7 @@ sub analyse_newer_manifest
     $response->code == 200 or return $self->scan_error( status_message( $response->code ) );
 
     make_path( dirname( $self->update_manifest ) );
-    write_file( $self->update_manifest, $response->content );
+    write_text( $self->update_manifest, $response->content );
     $self->clear_manifest;
     $self->clear_recent_manifest_entry;
 
