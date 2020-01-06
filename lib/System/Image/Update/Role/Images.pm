@@ -29,8 +29,8 @@ use experimental 'smartmatch';
 =cut
 
 has record_installed_location => (
-    is      => "ro",
-    default => "/opt/record-installed"
+    is       => "ro",
+    required => 1,
 );
 
 has record_installed => (
@@ -58,8 +58,8 @@ has record_installed_aliases => (
     required => 1
 );
 has record_installed_components_image_separator => (
-    is      => "ro",
-    default => "+"
+    is       => "ro",
+    required => 1
 );
 
 has installed_image => ( is => "lazy" );

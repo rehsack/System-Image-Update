@@ -28,8 +28,8 @@ contains the location where the images for updating are located
 =cut
 
 has image_location => (
-    is      => "ro",
-    default => $ENV{SYSTEM_IMAGE_UPDATE_FLASH_DIR} // "/data/.flashimg"
+    is       => "ro",
+    required => 1,
 );
 
 =head2 flash_command
@@ -39,8 +39,8 @@ contains the command to be executed for applying update
 =cut
 
 has flash_command => (
-    is      => "ro",
-    default => "/etc/init.d/flash-device.sh"
+    is       => "ro",
+    required => 1,
 );
 
 =head1 METHODS

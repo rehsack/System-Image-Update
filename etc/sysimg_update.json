@@ -1,11 +1,19 @@
 {
     "log_adapter" : [
-        "Dispatch",
-	"outputs", [
-	    [ "File",   "min_level", "debug", "filename", "sysimg_update.log", "newline", 1, "mode", ">>" ],
-	    [ "Screen", "min_level", "notice", "newline", 1, "stderr", 1 ]
-	]
+        "Log4cplus",
+        "config_file", "etc/sysimg-update.properties",
+        "name", "sysimg-update"
     ],
-    "restrict_record_installed": [ "" ],
+    "update_server": "localhost",
+    "update_path": "std",
+    "update_manifest_basename" : "manifest-1.0.json",
+    "update_manifest_dirname": ".updates",
+    "download_file_prefix": "",
+    "image_location": ".flashimg",
+    "flash_command": "/bin/true",
+    "installed_version_file": "system-image",
+    "restrict_record_installed": [ "system-image" ],
+    "record_installed_location": "",
+    "record_installed_components_image_separator": ":",
     "record_installed_aliases": {}
 }

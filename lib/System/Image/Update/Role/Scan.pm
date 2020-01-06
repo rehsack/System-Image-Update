@@ -11,6 +11,7 @@ System::Image::Update::Role::Scan - role to scan for new updates
 =cut
 
 use File::Basename qw(dirname);
+use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
 use File::Path qw(make_path);
 use File::Slurper qw(write_text);
 use File::Spec;
@@ -24,16 +25,14 @@ with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging
 
 our $VERSION = "0.001";
 
-my $default_update_server = "update.homepilot.de";
 has update_server => (
-    is      => "ro",
-    default => $default_update_server,
+    is       => "ro",
+    required => 1,
 );
 
-my $default_update_path = "common";
 has update_path => (
-    is      => "ro",
-    default => $default_update_path,
+    is       => "ro",
+    required => 1,
 );
 
 has scan_interval => (
@@ -41,16 +40,14 @@ has scan_interval => (
     default => 6 * 60 * 60,
 );
 
-my $default_update_manifest_basename = "manifest.json";
 has update_manifest_basename => (
-    is      => "ro",
-    default => $default_update_manifest_basename,
+    is       => "ro",
+    required => 1,
 );
 
-my $default_update_manifest_dirname = $ENV{SYSTEM_IMAGE_UPDATE_DIR} // "/data/.update/";
 has update_manifest_dirname => (
-    is      => "ro",
-    default => $default_update_manifest_dirname,
+    is       => "ro",
+    required => 1,
 );
 
 has update_manifest_uri => ( is => "lazy" );
@@ -80,12 +77,14 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    $self->update_server eq $default_update_server or $collect_savable_config->{update_server} = $self->update_server;
-    $self->update_path eq $default_update_path     or $collect_savable_config->{update_path}   = $self->update_path;
-    $self->update_manifest_dirname eq $default_update_manifest_dirname
-      or $collect_savable_config->{update_manifest_dirname} = $self->update_manifest_dirname;
-    $self->update_manifest_basename eq $default_update_manifest_basename
-      or $collect_savable_config->{update_manifest_basename} = $self->update_manifest_basename;
+    my ($siud)                 = system_image_update_dir;
+    unless(defined $siud and -d $siud)
+    {
+        $collect_savable_config->{update_server} = $self->update_server;
+        $collect_savable_config->{update_path}   = $self->update_path;
+        $collect_savable_config->{update_manifest_dirname} = $self->update_manifest_dirname;
+        $collect_savable_config->{update_manifest_basename} = $self->update_manifest_basename;
+    }
 
     $collect_savable_config;
 };

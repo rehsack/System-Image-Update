@@ -51,8 +51,8 @@ sub _build_fake_ver
 }
 
 has installed_version_file => (
-    is      => "ro",
-    default => "/opt/record-installed/system-image"
+    is       => "ro",
+    required => 1,
 );
 
 has installed_version => (
