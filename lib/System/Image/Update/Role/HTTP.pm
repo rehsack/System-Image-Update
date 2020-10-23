@@ -20,29 +20,29 @@ use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
-has http => ( is => "lazy" );
+has http => (is => "lazy");
 
 sub _build_http { my $http = Net::Async::HTTP->new(); $_[0]->loop->add($http); $http }
 
-has http_user => ( is => "lazy" );
+has http_user => (is => "lazy");
 
 my $http_user_built;
 
 sub _build_http_user
 {
     my $eth0_info = qx(/sbin/ip link show dev eth0);
-    ( $http_user_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "" ) =~ s/://g;
+    ($http_user_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "") =~ s/://g;
     $http_user_built;
 }
 
-has http_passwd => ( is => "lazy" );
+has http_passwd => (is => "lazy");
 
 my $http_passwd_built;
 
 sub _build_http_passwd
 {
     my $eth0_info = qx(/sbin/ip link show dev eth0);
-    ( $http_passwd_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "" ) =~ s/://g;
+    ($http_passwd_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "") =~ s/://g;
     $http_passwd_built;
 }
 
@@ -60,10 +60,10 @@ sub _build_http_proto
 
 sub do_http_request
 {
-    my ( $self, %req_params ) = @_;
+    my ($self, %req_params) = @_;
 
-    my $loop = $self->loop;
-    my %on_error = ( defined $req_params{on_error} ? ( on_error => $req_params{on_error} ) : () );
+    my $loop     = $self->loop;
+    my %on_error = (defined $req_params{on_error} ? (on_error => $req_params{on_error}) : ());
 
     $loop->resolver->getaddrinfo(
         host        => $req_params{uri}->host,
@@ -77,11 +77,11 @@ sub do_http_request
                 addr        => $addr->{addr},
                 numeric     => 1,
                 on_resolved => sub {
-                    my ( $host, $service ) = @_;
+                    my ($host, $service) = @_;
 
-                    $self->log->debug( $req_params{method} . " " . $req_params{uri}->as_string );
-                    my $req = HTTP::Request->new( delete $req_params{method}, delete $req_params{uri} );
-                    $req->authorization_basic( $self->http_user, $self->http_passwd );
+                    $self->log->debug($req_params{method} . " " . $req_params{uri}->as_string);
+                    my $req = HTTP::Request->new(delete $req_params{method}, delete $req_params{uri});
+                    $req->authorization_basic($self->http_user, $self->http_passwd);
 
                     my $http = $self->http;
                     my ($response) = $http->do_request(

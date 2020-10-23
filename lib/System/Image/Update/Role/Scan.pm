@@ -50,15 +50,15 @@ has update_manifest_dirname => (
     required => 1,
 );
 
-has update_manifest_uri => ( is => "lazy" );
+has update_manifest_uri => (is => "lazy");
 
 sub _build_update_manifest_uri
 {
     my $self = shift;
     my $u    = URI->new();
     $u->scheme("http");
-    $u->host( $self->update_server );
-    $u->path( File::Spec->catfile( $self->update_path, $self->update_manifest_basename ) );
+    $u->host($self->update_server);
+    $u->path(File::Spec->catfile($self->update_path, $self->update_manifest_basename));
     $u->as_string;
 }
 
@@ -69,7 +69,7 @@ has update_manifest => (
 sub _build_update_manifest
 {
     my $self = shift;
-    File::Spec->catfile( $self->update_manifest_dirname, $self->update_manifest_basename );
+    File::Spec->catfile($self->update_manifest_dirname, $self->update_manifest_basename);
 }
 
 around collect_savable_config => sub {
@@ -77,12 +77,12 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    my ($siud)                 = system_image_update_dir;
-    unless(defined $siud and -d $siud)
+    my ($siud) = system_image_update_dir;
+    unless (defined $siud and -d $siud)
     {
-        $collect_savable_config->{update_server} = $self->update_server;
-        $collect_savable_config->{update_path}   = $self->update_path;
-        $collect_savable_config->{update_manifest_dirname} = $self->update_manifest_dirname;
+        $collect_savable_config->{update_server}            = $self->update_server;
+        $collect_savable_config->{update_path}              = $self->update_path;
+        $collect_savable_config->{update_manifest_dirname}  = $self->update_manifest_dirname;
         $collect_savable_config->{update_manifest_basename} = $self->update_manifest_basename;
     }
 
@@ -93,18 +93,18 @@ my $scan_timer;
 
 sub scan_error
 {
-    my ( $self, $message ) = @_;
-    $self->log->error( "Error fetching " . $self->update_manifest_uri . ": " . $message );
+    my ($self, $message) = @_;
+    $self->log->error("Error fetching " . $self->update_manifest_uri . ": " . $message);
     $self->reset_config;
 }
 
 sub scan
 {
-    my ( $self, $extra_scan ) = @_;
+    my ($self, $extra_scan) = @_;
     $self->log->debug("Starting scan ...");
     $extra_scan or $scan_timer = undef;
     $self->do_http_request(
-        uri         => URI->new( $self->update_manifest_uri ),
+        uri         => URI->new($self->update_manifest_uri),
         method      => "HEAD",
         on_response => sub { $self->check_newer_manifest(@_) },
         on_error    => sub { $self->scan_error(@_); },
@@ -116,28 +116,28 @@ sub schedule_scan
     my $self = shift;
     $scan_timer and return;
     $self->status("scan");
-    $scan_timer = $self->wakeup_in( $self->scan_interval, "scan" );
+    $scan_timer = $self->wakeup_in($self->scan_interval, "scan");
 }
 
 sub extra_scan { shift->scan(1); }
 
 sub scan_before
 {
-    my ( $self, $ts ) = @_;
+    my ($self, $ts) = @_;
 
-    $self->wakeup_in( $ts, "extra_scan" );
+    $self->wakeup_in($ts, "extra_scan");
 }
 
 sub check_newer_manifest
 {
-    my ( $self, $response ) = @_;
-    $response->code == 200 or return $self->scan_error( status_message( $response->code ) );
+    my ($self, $response) = @_;
+    $response->code == 200 or return $self->scan_error(status_message($response->code));
 
-    my $manifest_mtime = -f $self->update_manifest ? stat( $self->update_manifest )->ctime : 0;
+    my $manifest_mtime         = -f $self->update_manifest ? stat($self->update_manifest)->ctime : 0;
     my $manifest_last_modified = $response->last_modified || -1;
 
     $manifest_mtime < $manifest_last_modified and $self->do_http_request(
-        uri         => URI->new( $self->update_manifest_uri ),
+        uri         => URI->new($self->update_manifest_uri),
         method      => "GET",
         on_response => sub { $self->analyse_newer_manifest(@_) },
         on_error    => sub { $self->scan_error(@_); },
@@ -148,16 +148,16 @@ sub check_newer_manifest
 
 sub analyse_newer_manifest
 {
-    my ( $self, $response ) = @_;
-    $response->code == 200 or return $self->scan_error( status_message( $response->code ) );
+    my ($self, $response) = @_;
+    $response->code == 200 or return $self->scan_error(status_message($response->code));
 
-    make_path( dirname( $self->update_manifest ) );
-    write_text( $self->update_manifest, $response->content );
+    make_path(dirname($self->update_manifest));
+    write_text($self->update_manifest, $response->content);
     $self->clear_manifest;
     $self->clear_recent_manifest_entry;
 
-    $self->wakeup_in( 1, "save_config" );
-    $self->wakeup_in( 1, "check" );
+    $self->wakeup_in(1, "save_config");
+    $self->wakeup_in(1, "check");
 }
 
 =head1 AUTHOR

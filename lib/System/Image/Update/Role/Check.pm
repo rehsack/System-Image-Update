@@ -18,7 +18,7 @@ with "System::Image::Update::Role::Logging", "System::Image::Update::Role::Manif
 
 sub _cmp_versions
 {
-    my ( $self, $provided_version, $installed_version ) = @_;
+    my ($self, $provided_version, $installed_version) = @_;
     $self->wanted_image eq $self->installed_image
       ? $provided_version > $installed_version
       : $provided_version >= $installed_version;
@@ -32,12 +32,11 @@ sub check
 
     $self->status("check");
 
-    my ( $provided_version, $recent_update ) = %{ $self->recent_manifest_entry };
+    my ($provided_version, $recent_update) = %{$self->recent_manifest_entry};
     $self->log->debug("Proving whether '$provided_version' is more recent than installed '$installed_version'");
-    $self->_cmp_versions( version->new($provided_version), $installed_version ) or return $self->reset_config;
+    $self->_cmp_versions(version->new($provided_version), $installed_version) or return $self->reset_config;
     $self->log->debug("'$provided_version' is more recent than '$installed_version'.");
-    $self->recent_update(
-        { %{$recent_update}, ( defined $recent_update->{release_ts} ? () : ( release_ts => DateTime->now->epoch ) ) } );
+    $self->recent_update({%{$recent_update}, (defined $recent_update->{release_ts} ? () : (release_ts => DateTime->now->epoch))});
 
     $recent_update;
 }

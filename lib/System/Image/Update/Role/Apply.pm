@@ -58,15 +58,15 @@ sub check4apply
     $self->log->debug("Starting check4apply ...");
     $self->has_recent_update or return;
 
-    if ( $self->recent_update->{apply} )
+    if ($self->recent_update->{apply})
     {
         my $img_fn = $self->download_image;
         -e $img_fn or return $self->log->error("Cannot find $img_fn: $!");
 
-        my $now = DateTime->now->epoch;
+        my $now  = DateTime->now->epoch;
         my $wait = $self->recent_update->{apply} - 60 > $now ? $self->recent_update->{apply} - $now : 1;
-        $wait > 1 and $self->scan_before( $wait - 60 ) and $self->wakeup_in( $wait - 3, "prove" );
-        $wait <= 1 and $self->wakeup_in( $wait, "apply" );
+        $wait > 1 and $self->scan_before($wait - 60) and $self->wakeup_in($wait - 3, "prove");
+        $wait <= 1 and $self->wakeup_in($wait, "apply");
     }
 }
 
@@ -74,15 +74,15 @@ sub _apply4real
 {
     my $self = shift;
 
-    make_path( $self->image_location );
-    move( $self->download_image, $self->image_location )
-      or return $self->log->error( "Cannot rename " . $self->download_image . " to " . $self->image_location . ": $!" );
+    make_path($self->image_location);
+    move($self->download_image, $self->image_location)
+      or return $self->log->error("Cannot rename " . $self->download_image . " to " . $self->image_location . ": $!");
 
     $self->reset_config;
     $self->save_config;
 
     # XXX svc -t (hp2sm) will abort flash!
-    system( $self->flash_command ) or return $self->log->error("Cannot send execute flash command: $!");
+    system($self->flash_command) or return $self->log->error("Cannot send execute flash command: $!");
 }
 
 =head2 apply

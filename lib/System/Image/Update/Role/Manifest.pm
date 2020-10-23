@@ -31,7 +31,7 @@ sub _build_manifest
     $_[0]->clear_recent_manifest_entry;
     $_[0]->clear_available_images;
 
-    my $mfcnt = read_text( $_[0]->update_manifest );
+    my $mfcnt = read_text($_[0]->update_manifest);
     JSON->new->decode($mfcnt);
 }
 
@@ -51,8 +51,8 @@ sub _build_recent_manifest_entry
 {
     my $self = shift;
 
-    my ( $recent_key, $recent_ver );
-    foreach my $avail_key ( keys %{ $self->manifest } )
+    my ($recent_key, $recent_ver);
+    foreach my $avail_key (keys %{$self->manifest})
     {
         my $avail_ver = eval { version->new($avail_key); };
         $@ and $avail_ver = $self->_build_fake_ver($avail_key);
@@ -64,7 +64,7 @@ sub _build_recent_manifest_entry
         $recent_ver = $avail_ver;
     }
     $self->clear_available_images;
-    +{ $recent_key => $self->manifest->{$recent_key} };
+    +{$recent_key => $self->manifest->{$recent_key}};
 }
 
 sub _trigger_recent_manifest_entry

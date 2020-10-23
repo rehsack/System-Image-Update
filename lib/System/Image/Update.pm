@@ -82,7 +82,7 @@ has status => (
     lazy      => 1,
     builder   => 1,
     predicate => 1,
-    isa       => sub { __PACKAGE__->can( $_[0] ) or die "Invalid status: $_[0]" }
+    isa       => sub { __PACKAGE__->can($_[0]) or die "Invalid status: $_[0]" }
 );
 
 sub _build_status
@@ -126,8 +126,8 @@ sub run
     my $self = shift;
     my $cb   = $self->status;
     # that starts the regular scan interval
-    $cb ne "scan" and $self->wakeup_in( 1, "scan" );
-    $self->wakeup_in( 10, $cb );
+    $cb ne "scan" and $self->wakeup_in(1, "scan");
+    $self->wakeup_in(10, $cb);
     $self->loop->run;
 }
 
@@ -152,19 +152,19 @@ routine being called to start fresh
 
 sub reset_config
 {
-    my ( $self, $status ) = @_;
+    my ($self, $status) = @_;
     $status or $self->schedule_scan;
-    $self->wakeup_in( 1, "save_config" );
-    $status and $self->wakeup_in( 1, $status );
+    $self->wakeup_in(1, "save_config");
+    $status and $self->wakeup_in(1, $status);
 }
 
-has savable_configfile => ( is => "lazy" );
+has savable_configfile => (is => "lazy");
 
 sub _build_savable_configfile
 {
     my $self = $_[0];
     my ($scfd) = system_image_update_dir;
-    defined $scfd and -d $scfd and return File::Spec->catfile( $scfd, basename( $self->config_files->[0] ) );
+    defined $scfd and -d $scfd and return File::Spec->catfile($scfd, basename($self->config_files->[0]));
     $self->config_files->[0];
 }
 
@@ -181,7 +181,7 @@ sub save_config
     my $savable_config = $self->collect_savable_config;
     my $savable_text   = JSON->new->pretty->allow_nonref->encode($savable_config);
     my $target         = $self->savable_configfile;
-    write_text( $target, $savable_text );    # XXX prove utf8 stuff
+    write_text($target, $savable_text);    # XXX prove utf8 stuff
 }
 
 =head1 AUTHOR

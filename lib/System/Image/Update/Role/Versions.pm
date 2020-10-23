@@ -22,32 +22,32 @@ use Moo::Role;
 
 with "System::Image::Update::Role::Logging";
 
-has month_by_name => ( is => "lazy" );
+has month_by_name => (is => "lazy");
 
 sub _build_month_by_name
 {
     my @month_names = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
     {
-        map { $month_names[$_] => $_ + 1 } ( 0 .. $#month_names )
+        map { $month_names[$_] => $_ + 1 } (0 .. $#month_names)
     }
 }
 
-has _depreciated_scanner => ( is => "lazy" );
+has _depreciated_scanner => (is => "lazy");
 
 sub _build__depreciated_scanner
 {
     my $self = shift;
     DateTime::Format::Strptime->new(
         pattern  => "%FT%T",
-        on_error => sub { $self->log->error( $_[1] ); 1 }
+        on_error => sub { $self->log->error($_[1]); 1 }
     );
 }
 
 sub _build_fake_ver
 {
-    my ( $self, $dt ) = @_;
+    my ($self, $dt) = @_;
     blessed $dt or $dt = $self->_depreciated_scanner->parse_datetime($dt);
-    version->new( "0.0." . $dt->epoch );
+    version->new("0.0." . $dt->epoch);
 }
 
 has installed_version_file => (
@@ -63,14 +63,14 @@ sub _build_installed_version
 {
     my $self = shift;
     -f $self->installed_version_file
-      and return version->new( ( split( "-", read_text( $self->installed_version_file, chomp => 1 ) ) )[0] );
+      and return version->new((split("-", read_text($self->installed_version_file, chomp => 1)))[0]);
 
     require_module("File::LibMagic");
     my $kident = File::LibMagic->new()->describe_filename("/boot/uImage");
     $kident =~
       m,(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+),
       or return $self->log->error("Can't extract kernel release date");
-    my ( $wday, $mon, $day, $hour, $minute, $second, $year, $kmatch ) = ( $1, $2, $3, $4, $5, $6, $7, $& );
+    my ($wday, $mon, $day, $hour, $minute, $second, $year, $kmatch) = ($1, $2, $3, $4, $5, $6, $7, $&);
     my $kdate = DateTime->new(
         year   => $year,
         month  => $self->month_by_name->{$mon},

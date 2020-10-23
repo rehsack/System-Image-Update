@@ -23,12 +23,12 @@ my %checksums = (
         eval {
             require_module("Crypt::RIPEMD160");
             my $fh;
-            open( $fh, "<", $save_fn ) or die "Error opening $save_fn: $!";
-            seek( $fh, 0, 0 );
+            open($fh, "<", $save_fn) or die "Error opening $save_fn: $!";
+            seek($fh, 0, 0);
             my $context = Crypt::RIPEMD160->new;
             $context->reset();
             $context->addfile($fh);
-            unpack( "H*", $context->digest() );
+            unpack("H*", $context->digest());
         };
     },
     sha1 => sub {
@@ -73,7 +73,7 @@ my %checksums = (
             require_module("Digest::MD5");
             my $md5 = Digest::MD5->new();
             my $fh;
-            open( $fh, "<", $save_fn ) or die "Error opening $save_fn: $!";
+            open($fh, "<", $save_fn) or die "Error opening $save_fn: $!";
 
             $md5->addfile($fh);
             $md5->hexdigest;
@@ -85,7 +85,7 @@ my %checksums = (
             require_module("Digest::MD6");
             my $md6 = Digest::MD6->new();
             my $fh;
-            open( $fh, "<", $save_fn ) or return die "Error opening $save_fn: $!";
+            open($fh, "<", $save_fn) or return die "Error opening $save_fn: $!";
 
             $md6->addfile($fh);
             $md6->hexdigest;
@@ -105,25 +105,25 @@ sub prove
     -f $save_fn or return $self->schedule_scan;
     defined $save_chksum->{size}
       and stat($save_fn)->size != $save_chksum->{size}
-      and return $self->abort_download( fallback_status => "check" );
+      and return $self->abort_download(fallback_status => "check");
 
     $self->status("prove");
-    $self->wakeup_in( 1, "save_config" );
+    $self->wakeup_in(1, "save_config");
 
-    foreach my $chksum ( keys %$save_chksum )
+    foreach my $chksum (keys %$save_chksum)
     {
         defined $checksums{$chksum} and "CODE" eq ref $checksums{$chksum} and my $string = $checksums{$chksum}->($save_fn);
         $@ and $self->log->error($@);
         defined $string or next;    # kind of error ...
 
         # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{$chksum} or return $self->abort_download( errmsg => "Invalid checksum for $save_fn" );
+        $string eq $save_chksum->{$chksum} or return $self->abort_download(errmsg => "Invalid checksum for $save_fn");
         ++$chksums_ok;
     }
 
-    $chksums_ok >= 2 or return $self->abort_download( errmsg => "Not enought checksums passed" );
+    $chksums_ok >= 2 or return $self->abort_download(errmsg => "Not enought checksums passed");
 
-    $self->wakeup_in( 1, "check4apply" );
+    $self->wakeup_in(1, "check4apply");
 }
 
 =head1 AUTHOR

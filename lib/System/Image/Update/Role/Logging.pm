@@ -50,7 +50,6 @@ around collect_savable_config => sub {
     $collect_savable_config;
 };
 
-
 =head1 AUTHOR
 
 Jens Rehsack, C<< <rehsack at cpan.org> >>

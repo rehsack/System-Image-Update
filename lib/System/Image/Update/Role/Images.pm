@@ -41,8 +41,8 @@ sub _build_record_installed
 {
     my $self = shift;
     my @installed;
-    my $dir = IO::Dir->new( $self->record_installed_location );
-    while ( defined( my $e = $dir->read ) )
+    my $dir = IO::Dir->new($self->record_installed_location);
+    while (defined(my $e = $dir->read))
     {
         push @installed, "$e" unless $e eq "." or $e eq "..";
     }
@@ -62,19 +62,19 @@ has record_installed_components_image_separator => (
     required => 1
 );
 
-has installed_image => ( is => "lazy" );
+has installed_image => (is => "lazy");
 
 sub _build_installed_image
 {
     my $self = shift;
 
-    my %a         = %{ $self->record_installed_aliases };
-    my @img_comps = @{ $self->record_installed };
-    my @rri       = @{ $self->restrict_record_installed };
-    @img_comps = grep { !( $_ ~~ @rri ) } @img_comps;
-    @img_comps = map { defined $a{$_} ? $a{$_} : $_ } @img_comps;
+    my %a         = %{$self->record_installed_aliases};
+    my @img_comps = @{$self->record_installed};
+    my @rri       = @{$self->restrict_record_installed};
+    @img_comps = grep { !($_ ~~ @rri) } @img_comps;
+    @img_comps = map  { defined $a{$_} ? $a{$_} : $_ } @img_comps;
 
-    join( $self->record_installed_components_image_separator, @img_comps );
+    join($self->record_installed_components_image_separator, @img_comps);
 }
 
 has wanted_image => (
@@ -86,9 +86,9 @@ sub _build_wanted_image { $_[0]->installed_image }
 
 sub _trigger_wanted_image
 {
-    my ( $self, $new ) = @_;
-    my @a = @{ $self->available_images };
-    $new ~~ @a or die $self->log->error( "$new is not in available images ['" . join( "', '", @a ) . "']" );
+    my ($self, $new) = @_;
+    my @a = @{$self->available_images};
+    $new ~~ @a or die $self->log->error("$new is not in available images ['" . join("', '", @a) . "']");
     $new;
 }
 
@@ -101,26 +101,26 @@ sub _build_available_images
 {
     my $self = shift;
 
-    my ( undef, $recent ) = %{ $self->recent_manifest_entry };
+    my (undef, $recent) = %{$self->recent_manifest_entry};
     my @avail;
 
-    if ( my $dl_pfx = $self->download_file_prefix )
+    if (my $dl_pfx = $self->download_file_prefix)
     {
         my $l = length $dl_pfx;
         @avail = map { substr $_, 0, $l, ""; $_ } grep { $dl_pfx eq substr $_, 0, $l } keys %{$recent};
     }
     else
     {
-        while ( my ( $k, $v ) = each %{$recent} )
+        while (my ($k, $v) = each %{$recent})
         {
             $v or next;
-            my ( $file, @sums ) = split( ";", $v );
+            my ($file, @sums) = split(";", $v);
             @sums or next;
             push @avail, $k;
         }
     }
 
-    [ sort @avail ];
+    [sort @avail];
 }
 
 around collect_savable_config => sub {

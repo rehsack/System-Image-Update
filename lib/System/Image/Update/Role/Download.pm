@@ -31,15 +31,15 @@ has recent_update => (
 
 sub _trigger_recent_update
 {
-    my ( $self, $new_val ) = @_;
+    my ($self, $new_val) = @_;
     $self->has_loop or return;
     $self->log->debug("Trigger prove for automatic download");
     exists $new_val->{estimated_dl_ts} or $self->determine_estimated_dl_ts($new_val);
-    $self->wakeup_in( 1, "save_config" );
-    my $now = DateTime->now->epoch;
+    $self->wakeup_in(1, "save_config");
+    my $now  = DateTime->now->epoch;
     my $wait = $self->recent_update->{estimated_dl_ts} - 60 > $now ? $self->recent_update->{estimated_dl_ts} - $now : 1;
-    $wait > 1 and $self->scan_before( $wait - 60 ) and $self->wakeup_in( $wait - 3, "check" );
-    $self->wakeup_in( $wait, "download" );
+    $wait > 1 and $self->scan_before($wait - 60) and $self->wakeup_in($wait - 3, "check");
+    $self->wakeup_in($wait, "download");
 }
 
 has download_file_prefix => (
@@ -63,9 +63,9 @@ has max_download_wait => (
     default => 11 * 24 * 3600
 );
 
-has download_dir => ( is => "lazy" );
+has download_dir => (is => "lazy");
 
-sub _build_download_dir { File::Basename::dirname( $_[0]->update_manifest ); }
+sub _build_download_dir { File::Basename::dirname($_[0]->update_manifest); }
 
 has download_basename => (
     is      => "lazy",
@@ -76,8 +76,8 @@ sub _build_download_basename
 {
     my $self = shift;
     $self->has_recent_update or confess "No downloadable image without a recent update";
-    my $save_fn = $self->recent_update->{ $self->download_file };
-    $save_fn = ( split ";", $save_fn )[0];
+    my $save_fn = $self->recent_update->{$self->download_file};
+    $save_fn = (split ";", $save_fn)[0];
 }
 
 has download_image => (
@@ -89,10 +89,10 @@ sub _build_download_image
 {
     my $self = shift;
     $self->has_recent_update or confess "No downloadable image without a recent update";
-    my $save_fn = $self->recent_update->{ $self->download_file };
-    $save_fn = ( split ";", $save_fn )[0];
+    my $save_fn = $self->recent_update->{$self->download_file};
+    $save_fn = (split ";", $save_fn)[0];
     $save_fn = File::Basename::basename($save_fn);
-    $save_fn = File::Spec->catfile( $self->download_dir, $save_fn );
+    $save_fn = File::Spec->catfile($self->download_dir, $save_fn);
     $save_fn;
 }
 
@@ -104,7 +104,7 @@ has download_sums => (
 sub _build_download_sums
 {
     my $self      = shift;
-    my $save_fn   = $self->recent_update->{ $self->download_file };
+    my $save_fn   = $self->recent_update->{$self->download_file};
     my @save_info = split ";", $save_fn;
     shift @save_info;
     my %sums = map { split "=", $_, 2 } @save_info;
@@ -113,27 +113,27 @@ sub _build_download_sums
 
 sub determine_estimated_dl_ts
 {
-    my ( $self, $new_val ) = @_;
+    my ($self, $new_val) = @_;
 
     my $strp = DateTime::Format::Strptime->new(
         pattern  => "%FT%T",
-        on_error => sub { $self->log->error( $_[1] ); 1 }
+        on_error => sub { $self->log->error($_[1]); 1 }
     );
-    looks_like_number( $new_val->{release_ts} )
-      or $new_val->{release_ts} = eval { $strp->parse_datetime( $new_val->{release_ts} )->epoch; } // DateTime->now->epoch;
-    if ( $new_val->{apply} )
+    looks_like_number($new_val->{release_ts})
+      or $new_val->{release_ts} = eval { $strp->parse_datetime($new_val->{release_ts})->epoch; } // DateTime->now->epoch;
+    if ($new_val->{apply})
     {
-        looks_like_number( $new_val->{apply} ) or $new_val->{apply} = eval { $strp->parse_datetime( $new_val->{apply} )->epoch; };
+        looks_like_number($new_val->{apply}) or $new_val->{apply} = eval { $strp->parse_datetime($new_val->{apply})->epoch; };
 
         my $delta_seconds = $new_val->{apply} - $new_val->{release_ts};
         $delta_seconds > 0
-          and $new_val->{estimated_dl_ts} = $new_val->{release_ts} + int( $delta_seconds / ( ( rand 20 ) + 21 ) );
+          and $new_val->{estimated_dl_ts} = $new_val->{release_ts} + int($delta_seconds / ((rand 20) + 21));
         $new_val->{estimated_dl_ts} //= 1;
     }
     else
     {
         $new_val->{estimated_dl_ts} =
-          $new_val->{release_ts} + rand( $self->max_download_wait - $self->min_download_wait ) + $self->max_download_wait + 1;
+          $new_val->{release_ts} + rand($self->max_download_wait - $self->min_download_wait) + $self->max_download_wait + 1;
     }
 }
 
@@ -159,9 +159,9 @@ sub download
 
     my $save_fn = $self->download_image;
     # XXX skip download when image is already there and valid
-    if ( -f $save_fn )
+    if (-f $save_fn)
     {
-        $self->wakeup_in( 1, "prove" );
+        $self->wakeup_in(1, "prove");
         return;
     }
 
@@ -171,8 +171,8 @@ sub download
 
     my $u = URI->new();
     $u->scheme("http");
-    $u->host( $self->update_server );
-    $u->path( File::Spec->catfile( $self->update_path, $self->download_basename ) );
+    $u->host($self->update_server);
+    $u->path(File::Spec->catfile($self->update_path, $self->download_basename));
 
     ($download_response_future) = $self->do_http_request(
         uri           => $u,
@@ -180,24 +180,24 @@ sub download
         stall_timeout => 60 * 5,
         on_header     => sub {
             my ($response) = @_;
-            if ( $response->code != 200 )
+            if ($response->code != 200)
             {
-                $self->log->error( "Error fetching " . $u->as_string . ": " . status_message( $response->code ) );
+                $self->log->error("Error fetching " . $u->as_string . ": " . status_message($response->code));
                 $self->reset_config;
                 return sub { $_[0] and $self->log->debug("Discarding received garbage") };
             }
             $self->log->debug("Receiving data");
-            $self->wakeup_in( 1, "save_config" );
-            return sub { $self->download_chunk( $save_fn, @_ ) }
+            $self->wakeup_in(1, "save_config");
+            return sub { $self->download_chunk($save_fn, @_) }
         },
         on_error => sub {
             my $message = shift;
-            $self->log->error( "Error fetching " . $u->as_string . ": " . $message );
+            $self->log->error("Error fetching " . $u->as_string . ": " . $message);
             $self->reset_config;
         },
     );
 
-    $self->log->debug( "Download future for " . $u->as_string . " started" );
+    $self->log->debug("Download future for " . $u->as_string . " started");
 }
 
 around reset_config => sub {
@@ -218,29 +218,29 @@ around reset_config => sub {
 
 sub abort_download
 {
-    my ( $self, %options ) = @_;
+    my ($self, %options) = @_;
 
     $self->has_recent_update and my $fn = $self->download_image;
 
     $self->log->debug("Aborting download ...");
-    $self->reset_config( $options{fallback_status} );
+    $self->reset_config($options{fallback_status});
 
     $fn and -e $fn and unlink($fn);
 
-    $options{errmsg} and $self->log->error( $options{errmsg} );
+    $options{errmsg} and $self->log->error($options{errmsg});
 }
 
 sub download_chunk
 {
-    my ( $self, $fn, $data ) = @_;
+    my ($self, $fn, $data) = @_;
 
     $data or return $self->finish_download;
 
     my $fh;
-    open( $fh, ">>", $fn ) or return $self->abort_download( errmsg => "Cannot open $fn for appending: $!" );
+    open($fh, ">>", $fn) or return $self->abort_download(errmsg => "Cannot open $fn for appending: $!");
 
-    syswrite( $fh, $data, length($data) ) or return $self->abort_download( errmsg => "Cannot append to $fn: $!" );
-    close($fh) or return $self->abort_download( errmsg => "Error closing $fn: $!" );
+    syswrite($fh, $data, length($data)) or return $self->abort_download(errmsg => "Cannot append to $fn: $!");
+    close($fh)                          or return $self->abort_download(errmsg => "Error closing $fn: $!");
 }
 
 sub finish_download
@@ -248,7 +248,7 @@ sub finish_download
     my $self = shift;
     $self->log->debug("Starting finish_download ...");
     $download_response_future = undef;
-    $self->wakeup_in( 1, "prove" );
+    $self->wakeup_in(1, "prove");
 }
 
 =head1 AUTHOR

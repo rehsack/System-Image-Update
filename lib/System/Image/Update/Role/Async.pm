@@ -32,7 +32,7 @@ sub _build_loop
 
 sub wakeup_at
 {
-    my ( $self, $when, $cb_method ) = @_;
+    my ($self, $when, $cb_method) = @_;
 
     my $timer = IO::Async::Timer::Absolute->new(
         time      => $when,
@@ -48,7 +48,7 @@ sub wakeup_at
 
 sub wakeup_in
 {
-    my ( $self, $in, $cb_method ) = @_;
+    my ($self, $in, $cb_method) = @_;
 
     my $timer = IO::Async::Timer::Countdown->new(
         delay     => $in,
