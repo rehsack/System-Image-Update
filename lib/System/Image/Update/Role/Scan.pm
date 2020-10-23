@@ -26,12 +26,12 @@ with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging
 our $VERSION = "0.001";
 
 has update_server => (
-    is       => "ro",
+    is       => "rw",
     required => 1,
 );
 
 has update_path => (
-    is       => "ro",
+    is       => "rw",
     required => 1,
 );
 
@@ -41,7 +41,7 @@ has scan_interval => (
 );
 
 has update_manifest_basename => (
-    is       => "ro",
+    is       => "rw",
     required => 1,
 );
 

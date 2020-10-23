@@ -24,27 +24,32 @@ has http => (is => "lazy");
 
 sub _build_http { my $http = Net::Async::HTTP->new(); $_[0]->loop->add($http); $http }
 
-has http_user => (is => "lazy");
+has computed_http_cred => (
+    is   => "lazy",
+    init => undef
+);
 
-my $http_user_built;
-
-sub _build_http_user
+sub _build_computed_http_cred
 {
+    my $cred;
     my $eth0_info = qx(/sbin/ip link show dev eth0);
-    ($http_user_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "") =~ s/://g;
-    $http_user_built;
+    ($cred = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "") =~ s/://g;
+    $cred;
 }
 
-has http_passwd => (is => "lazy");
+has http_user => (
+    is        => "lazy",
+    predicate => 1
+);
 
-my $http_passwd_built;
+sub _build_http_user { return $_[0]->computed_http_cred; }
 
-sub _build_http_passwd
-{
-    my $eth0_info = qx(/sbin/ip link show dev eth0);
-    ($http_passwd_built = $eth0_info =~ m,link/ether\s((?:[a-f0-9]{2}:){5}[a-f0-9]{2}),ms ? $1 : "") =~ s/://g;
-    $http_passwd_built;
-}
+has http_passwd => (
+    is        => "lazy",
+    predicate => 1
+);
+
+sub _build_http_passwd { return $_[0]->computed_http_cred; }
 
 has http_proto => (
     is  => "lazy",
@@ -106,8 +111,14 @@ around collect_savable_config => sub {
     my $http_user   = $self->http_user;
     my $http_passwd = $self->http_passwd;
 
-    defined $http_user_built   or $collect_savable_config->{http_user}   = $self->http_user;
-    defined $http_passwd_built or $collect_savable_config->{http_passwd} = $self->http_passwd;
+    unless ($self->has_http_user
+        and $self->http_user ne $self->computed_http_cred
+        and $self->has_http_passwd
+        and $self->http_passwd ne $self->computed_http_cred)
+    {
+        $collect_savable_config->{http_user}   = $self->http_user;
+        $collect_savable_config->{http_passwd} = $self->http_passwd;
+    }
 
     $collect_savable_config;
 };
