@@ -63,7 +63,7 @@ sub _build_installed_version
 {
     my $self = shift;
     -f $self->installed_version_file
-      and return version->new((split("-", read_text($self->installed_version_file, chomp => 1)))[0]);
+      and return version->new((split("-", read_text($self->installed_version_file)))[0]);
 
     require_module("File::LibMagic");
     my $kident = File::LibMagic->new()->describe_filename("/boot/uImage");
