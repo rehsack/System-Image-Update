@@ -111,16 +111,16 @@ around collect_savable_config => sub {
     my $http_user   = $self->http_user;
     my $http_passwd = $self->http_passwd;
 
-    unless ($self->has_http_user
-        and $self->http_user ne $self->computed_http_cred
-        and $self->has_http_passwd
-        and $self->http_passwd ne $self->computed_http_cred)
-    {
-        $collect_savable_config->{http_user}   = $self->http_user;
-        $collect_savable_config->{http_passwd} = $self->http_passwd;
-    }
+          $self->has_http_user
+      and $self->http_user eq $self->computed_http_cred
+      and $self->has_http_passwd
+      and $self->http_passwd eq $self->computed_http_cred
+      and return $collect_savable_config;
 
-    $collect_savable_config;
+    $collect_savable_config->{http_user}   = $self->http_user;
+    $collect_savable_config->{http_passwd} = $self->http_passwd;
+
+    return $collect_savable_config;
 };
 
 =head1 AUTHOR
