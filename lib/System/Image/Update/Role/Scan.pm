@@ -78,7 +78,7 @@ around collect_savable_config => sub {
     my $collect_savable_config = $self->$next(@_);
 
     my ($siud) = system_image_update_dir;
-    unless (defined $siud and -d $siud)
+    if (defined $siud and -d $siud)
     {
         $collect_savable_config->{update_server}            = $self->update_server;
         $collect_savable_config->{update_path}              = $self->update_path;
