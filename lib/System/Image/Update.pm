@@ -101,14 +101,14 @@ around BUILDARGS => sub {
     my $class  = shift;
     my $params = $class->$next(@_);
 
+          $params->{status}
+      and $params->{status} eq "apply"
+      and $params->{recent_update}
+      and $params->{recent_update}->{apply} = DateTime->now->epoch;
+
     $params->{status}
       and $params->{status} eq "apply"
       and $params->{status} = "prove";
-
-          $params->{status}
-      and $params->{status} eq "prove"
-      and $params->{recent_update}
-      and $params->{recent_update}->{apply} = DateTime->now->epoch;
 
     $params;
 };
