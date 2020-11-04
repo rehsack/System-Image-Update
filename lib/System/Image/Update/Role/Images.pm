@@ -49,17 +49,21 @@ sub _build_record_installed
     \@installed;
 }
 
+has prefer_record_installed => (
+    is      => "ro",
+    default => sub { return [] },
+);
 has restrict_record_installed => (
-    is       => "ro",
-    required => 1
+    is      => "ro",
+    default => sub { return [] },
 );
 has record_installed_aliases => (
-    is       => "ro",
-    required => 1
+    is      => "ro",
+    default => sub { return {} },
 );
 has record_installed_components_image_separator => (
     is       => "ro",
-    required => 1
+    required => 1,
 );
 
 has installed_image => (is => "lazy");
@@ -68,11 +72,14 @@ sub _build_installed_image
 {
     my $self = shift;
 
-    my %a         = %{$self->record_installed_aliases};
     my @img_comps = @{$self->record_installed};
+    my %ria       = %{$self->record_installed_aliases};
     my @rri       = @{$self->restrict_record_installed};
-    @img_comps = grep { !($_ ~~ @rri) } @img_comps;
-    @img_comps = map  { defined $a{$_} ? $a{$_} : $_ } @img_comps;
+    my @pri       = @{$self->prefer_record_installed};
+
+    @rri and @img_comps = grep { !($_ ~~ @rri) } @img_comps;
+    @pri and @img_comps = grep { ($_  ~~ @pri) } @img_comps;
+    %ria and @img_comps = map  { defined $ria{$_} ? $ria{$_} : $_ } @img_comps;
 
     join($self->record_installed_components_image_separator, @img_comps);
 }
