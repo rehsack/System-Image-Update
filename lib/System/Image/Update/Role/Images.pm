@@ -77,8 +77,8 @@ sub _build_installed_image
     my @rri       = @{$self->restrict_record_installed};
     my @pri       = @{$self->prefer_record_installed};
 
-    @rri and @img_comps = grep { !($_ ~~ @rri) } @img_comps;
     @pri and @img_comps = grep { ($_  ~~ @pri) } @img_comps;
+    @rri and @img_comps = grep { !($_ ~~ @rri) } @img_comps;
     %ria and @img_comps = map  { defined $ria{$_} ? $ria{$_} : $_ } @img_comps;
 
     join($self->record_installed_components_image_separator, @img_comps);
@@ -148,7 +148,7 @@ Jens Rehsack, C<< <rehsack at cpan.org> >>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2020-2016 Jens Rehsack.
+Copyright 2014-2020 Jens Rehsack.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the the Artistic License (2.0). You may obtain a
