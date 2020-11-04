@@ -44,6 +44,8 @@ sub prove
         system($cmd);
     };
 
+    $stdout and $self->log->notice($stdout);
+    $stderr and $self->log->error($stderr);
     $exit == 0 or return $self->abort_download(errmsg => "Not enought checksums passed");
 
     $self->_set_verified_update($self->recent_update);
