@@ -10,6 +10,7 @@ System::Image::Update::Role::Prove - provides role proving downloaded images
 
 =cut
 
+use Capture::Tiny qw(capture);
 use File::stat;
 use Module::Runtime qw(require_module);
 
@@ -17,111 +18,35 @@ use Moo::Role;
 
 with "System::Image::Update::Role::Async", "System::Image::Update::Role::Logging";
 
-my %checksums = (
-    rmd160 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Crypt::RIPEMD160");
-            my $fh;
-            open($fh, "<", $save_fn) or die "Error opening $save_fn: $!";
-            seek($fh, 0, 0);
-            my $context = Crypt::RIPEMD160->new;
-            $context->reset();
-            $context->addfile($fh);
-            unpack("H*", $context->digest());
-        };
-    },
-    sha1 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha1");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-    },
-    sha1_256 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha256");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-    },
-    sha1_384 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha384");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-    },
-    sha1_512 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Digest::SHA");
-            my $sha = Digest::SHA->new("sha512");
-            $sha->addfile($save_fn);
-            $sha->hexdigest;
-        };
-    },
-    md5 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Digest::MD5");
-            my $md5 = Digest::MD5->new();
-            my $fh;
-            open($fh, "<", $save_fn) or die "Error opening $save_fn: $!";
+has prove_exec => (
+    is       => "ro",
+    required => 1,
+);
 
-            $md5->addfile($fh);
-            $md5->hexdigest;
-        };
-    },
-    md6 => sub {
-        my $save_fn = shift;
-        eval {
-            require_module("Digest::MD6");
-            my $md6 = Digest::MD6->new();
-            my $fh;
-            open($fh, "<", $save_fn) or return die "Error opening $save_fn: $!";
-
-            $md6->addfile($fh);
-            $md6->hexdigest;
-        };
-    },
+has verified_update => (
+    is        => "rwp",
+    predicate => 1,
+    clearer   => 1,
+    init      => undef,
 );
 
 sub prove
 {
     my $self = shift;
     $self->has_recent_update or return $self->reset_config;
-    my $save_fn     = $self->download_image;
-    my $save_chksum = $self->download_sums;
-    my $chksums_ok  = 0;
+    my $save_fn = $self->download_image;
 
     # XXX silent prove? partial downloaded?
     -f $save_fn or return $self->schedule_scan;
-    defined $save_chksum->{size}
-      and stat($save_fn)->size != $save_chksum->{size}
-      and return $self->abort_download(fallback_status => "check");
-
-    $self->status("prove");
-    $self->wakeup_in(1, "save_config");
-
-    foreach my $chksum (keys %$save_chksum)
+    my ($stdout, $stderr, $exit) = capture
     {
-        defined $checksums{$chksum} and "CODE" eq ref $checksums{$chksum} and my $string = $checksums{$chksum}->($save_fn);
-        $@ and $self->log->error($@);
-        defined $string or next;    # kind of error ...
+        my $cmd = join(" ", $self->prove_exec, $save_fn);
+        system($cmd);
+    };
 
-        # XXX $string might be undef here which causes a warning ...
-        $string eq $save_chksum->{$chksum} or return $self->abort_download(errmsg => "Invalid checksum for $save_fn");
-        ++$chksums_ok;
-    }
+    $exit == 0 or return $self->abort_download(errmsg => "Not enought checksums passed");
 
-    $chksums_ok >= 2 or return $self->abort_download(errmsg => "Not enought checksums passed");
+    $self->_set_verified_update($self->recent_update);
 
     $self->wakeup_in(1, "check4apply");
 }

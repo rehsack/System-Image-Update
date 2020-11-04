@@ -96,21 +96,6 @@ sub _build_download_image
     $save_fn;
 }
 
-has download_sums => (
-    is      => "lazy",
-    clearer => 1
-);
-
-sub _build_download_sums
-{
-    my $self      = shift;
-    my $save_fn   = $self->recent_update->{$self->download_file};
-    my @save_info = split ";", $save_fn;
-    shift @save_info;
-    my %sums = map { split "=", $_, 2 } @save_info;
-    \%sums;
-}
-
 sub determine_estimated_dl_ts
 {
     my ($self, $new_val) = @_;
@@ -207,7 +192,6 @@ around reset_config => sub {
 
     $self->clear_download_image;
     $self->clear_download_basename;
-    $self->clear_download_sums;
     $self->clear_recent_update;
 
     defined $download_response_future and $download_response_future->cancel;

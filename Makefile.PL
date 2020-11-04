@@ -7,6 +7,7 @@ use ExtUtils::MakeMaker;
 
 my %RUN_DEPS = (
     'perl'                                   => 5.014,
+    'Capture::Tiny'                          => 0,
     'Class::Load'                            => 0,
     'DateTime'                               => 0,
     'DateTime::Format::Strptime'             => 0,

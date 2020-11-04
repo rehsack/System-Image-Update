@@ -56,15 +56,15 @@ sub check4apply
     my $self = shift;
 
     $self->log->debug("Starting check4apply ...");
-    $self->has_recent_update or return;
+    $self->has_verified_update or return $self->log->error("Missing verified update");
 
-    if ($self->recent_update->{apply})
+    if ($self->verified_update->{apply})
     {
         my $img_fn = $self->download_image;
         -e $img_fn or return $self->log->error("Cannot find $img_fn: $!");
 
         my $now  = DateTime->now->epoch;
-        my $wait = $self->recent_update->{apply} - 60 > $now ? $self->recent_update->{apply} - $now : 1;
+        my $wait = $self->verified_update->{apply} - 60 > $now ? $self->verified_update->{apply} - $now : 1;
         $wait > 1 and $self->scan_before($wait - 60) and $self->wakeup_in($wait - 3, "prove");
         $wait <= 1 and $self->wakeup_in($wait, "apply");
     }
@@ -95,7 +95,7 @@ sub apply
 {
     my $self = shift;
 
-    $self->has_recent_update or return;
+    $self->has_verified_update or return;
 
     $self->log->debug("Starting apply ...");
     $self->_apply4real;
