@@ -13,7 +13,7 @@ System::Image::Update::Role::Logging - logging role
 our $VERSION = "0.001";
 
 use Class::Load qw(load_class);
-use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
+use File::ConfigDir::System::Image::Update qw(system_image_update_state_dir);
 
 use Moo::Role;
 
@@ -45,7 +45,7 @@ around collect_savable_config => sub {
     my $next                   = shift;
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
-    my ($scfd)                 = system_image_update_dir;
+    my ($scfd)                 = system_image_update_state_dir;
     $collect_savable_config->{log_adapter} = $self->log_adapter unless defined $scfd and -d $scfd;
     $collect_savable_config;
 };

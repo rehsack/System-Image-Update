@@ -11,7 +11,7 @@ use JSON      ();
 use File::Basename qw(basename);
 use File::Slurper qw(write_text);
 use File::ConfigDir ();
-use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
+use File::ConfigDir::System::Image::Update qw(system_image_update_state_dir);
 use namespace::clean;
 
 use Moo;
@@ -163,7 +163,7 @@ has savable_configfile => (is => "lazy");
 sub _build_savable_configfile
 {
     my $self = $_[0];
-    my ($scfd) = system_image_update_dir;
+    my ($scfd) = system_image_update_state_dir;
     defined $scfd and -d $scfd and return File::Spec->catfile($scfd, basename($self->config_files->[0]));
     $self->config_files->[0];
 }

@@ -11,7 +11,7 @@ System::Image::Update::Role::Scan - role to scan for new updates
 =cut
 
 use File::Basename qw(dirname);
-use File::ConfigDir::System::Image::Update qw(system_image_update_dir);
+use File::ConfigDir::System::Image::Update qw(system_image_update_state_dir);
 use File::Path qw(make_path);
 use File::Slurper qw(write_text);
 use File::Spec;
@@ -77,7 +77,7 @@ around collect_savable_config => sub {
     my $self                   = shift;
     my $collect_savable_config = $self->$next(@_);
 
-    my ($siud) = system_image_update_dir;
+    my ($siud) = system_image_update_state_dir;
     if (defined $siud and -d $siud)
     {
         $collect_savable_config->{update_server}            = $self->update_server;
